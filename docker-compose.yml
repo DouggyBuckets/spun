@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16
+    container_name: music_app_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: music_app
+      POSTGRES_PASSWORD: dev_password_change_me
+      POSTGRES_DB: music_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+
+  backend:
+    build: ./backend
+    container_name: music_app_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgres://music_app:dev_password_change_me@db:5432/music_app
+      JWT_SECRET: dev_jwt_secret_change_me
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "4000:4000"
+
+volumes:
+  pgdata:
