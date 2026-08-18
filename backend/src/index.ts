@@ -1,13 +1,8 @@
-import express, { Request, Response } from "express";
+import { createApp } from "./app";
+import { config } from "./config";
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app = createApp();
 
-app.use(express.json())
-app.get('/health', (_req: Request, res: Response) => {
-    res.json({ status: "ok" });
-});
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+app.listen(config.port, () => {
+    console.log(`Server running on http://localhost:${config.port}`);
 });
