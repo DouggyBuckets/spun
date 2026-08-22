@@ -3,7 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import { config } from "./config";
 import { errorHandler } from "./middleware/errorHandler";
-// import routes from "./routes";
+import routes from "./routes";
 
 export function createApp() {
     const app = express();
@@ -14,7 +14,7 @@ export function createApp() {
 
     app.get("/health", (_req, res) => res.json( { status: "ok" }));
 
-    // app.use("/api", routes);
+    app.use("/api", routes);
 
     app.use((_req, res) => res.status(404).json({ error: "Not found" }));
     app.use(errorHandler);
