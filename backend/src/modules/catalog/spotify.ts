@@ -86,6 +86,49 @@ export async function searchTracks(query: string) {
     return await response.json() as SpotifyTrackSearchResponse;
 }
 
+interface SpotifyArtistSearchResponse {
+    artists: {
+        items: {
+            id: string;
+            name: string;
+            images: { url: string }[];
+        }[];
+    };
+}
+
+export async function searchArtists(query: string) {
+    const token = await getSpotifyToken();
+    const params = new URLSearchParams({ q: query, type: "artist", limit: "10" });
+    const response = await fetch(`https://api.spotify.com/v1/search?${params}`, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    return await response.json() as SpotifyArtistSearchResponse;
+}
+
+interface SpotifyArtistAlbumsResponse {
+    items: {
+        id: string;
+        name: string;
+        images: { url: string }[];
+        release_date: string;
+        album_type: string;
+    }[];
+}
+
+export async function getArtistAlbums(spotifyArtistId: string) {
+    const token = await getSpotifyToken();
+    const response = await fetch(`https://api.spotify.com/v1/artists/${spotifyArtistId}/albums`, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) throw notFound("Artist not found");
+    return await response.json() as SpotifyArtistAlbumsResponse;
+}
+
 interface SpotifyAlbumDetails {
     id: string;
     name: string;
