@@ -1,4 +1,5 @@
 import { config } from "../../config";
+import { notFound } from "../../errors";
 
 interface CachedToken {
     token: string;
@@ -78,5 +79,7 @@ export async function getAlbum(spotifyId: string) {
             "Authorization": `Bearer ${token}`
         }
     });
+
+    if (!response.ok) throw notFound("Album not found");
     return await response.json() as SpotifyAlbumDetails;
 }
