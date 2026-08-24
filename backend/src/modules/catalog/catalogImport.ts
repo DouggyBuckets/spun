@@ -1,5 +1,6 @@
 import { db } from "../../db";
 import { getAlbum } from "./spotify";
+import { notFound } from "../../errors";
 
 function normalizeReleaseDate(releaseDate: string, precision: string): string {
     if (precision === "year") return `${releaseDate}-01-01`;
@@ -50,5 +51,32 @@ export async function getOrCreateAlbum(spotifyId: string) {
         )
     }
 
+    for (const track of albumDetails.tracks.items) {
+        const songResult = await db.query<{ id: number }>(
+            `INSERT INTO songs (external_id, title, track_number, duration_ms, album_id)
+            VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [track.id, track.name, track.track_number, track.duration_ms, albumId]
+        );
+        const songId = songResult.rows[0]!.id;
+
+        for (const artist of track.artists) {
+            const artistId = await getOrCreateArtist(artist.id, artist.name);
+            await db.query(
+                `INSERT INTO song_artists (song_id, artist_id) VALUES ($1, $2)`,
+                [songId, artistId]
+            );
+        }
+    }
+
     return albumId;
+}
+
+export async function getOrCreateSongByTrackId(spotifyTrackId: string, albumSpotifyId: string) {
+    await getOrCreateAlbum(albumSpotifyId); // Ensure album and its songs are created
+    
+    const result = await db.query(
+        `SELECT id FROM songs WHERE external_id = $1`, [spotifyTrackId]
+    );
+    if (result.rows[0]) return result.rows[0].id;
+    throw notFound("Song not found");
 }

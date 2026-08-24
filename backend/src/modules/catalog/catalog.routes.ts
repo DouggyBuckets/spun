@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { searchAlbums, getAlbum } from "./spotify";
+import { searchAlbums, getAlbum, searchTracks } from "./spotify";
 
 const router = Router();
 
@@ -17,6 +17,12 @@ router.get("/search", async (req, res) => {
 router.get("/albums/:id", async (req, res) => {
     const albumDetails = await getAlbum(req.params.id);
     res.json(albumDetails);
+})
+
+router.get("/search/tracks", async (req, res) => {
+    const { query } = searchSchema.parse(req.query);
+    const results = await searchTracks(query);
+    res.json(results);
 })
 
 export default router;

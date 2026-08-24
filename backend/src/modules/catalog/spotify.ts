@@ -38,7 +38,14 @@ export async function getSpotifyToken(): Promise<string> {
 }
 
 interface SpotifyAlbumResponse {
-    albums: { items: {name: string, images: {url: string}[]}[] } //only the fields we care about
+    albums: {
+        items: {
+            id: string;
+            name: string;
+            images: { url: string }[];
+            artists: { id: string; name: string }[];
+        }[];
+    };
 }
 
 export async function searchAlbums(query: string) {
@@ -50,6 +57,33 @@ export async function searchAlbums(query: string) {
         }
     });
     return await response.json() as SpotifyAlbumResponse;
+}
+
+interface SpotifyTrackSearchResponse {
+    tracks: {
+        items: {
+            id: string;
+            name: string;
+            duration_ms: number;
+            artists: { id: string; name: string }[];
+            album: {
+                id: string;
+                name: string;
+                images: { url: string }[];
+            };
+        }[];
+    };
+}
+
+export async function searchTracks(query: string) {
+    const token = await getSpotifyToken();
+    const params = new URLSearchParams({ q: query, type: "track", limit: "10" });
+    const response = await fetch(`https://api.spotify.com/v1/search?${params}`, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    return await response.json() as SpotifyTrackSearchResponse;
 }
 
 interface SpotifyAlbumDetails {
@@ -67,6 +101,7 @@ interface SpotifyAlbumDetails {
             name: string;
             track_number: number;
             duration_ms: number;
+            artists: { id: string; name: string }[];
             external_urls: { spotify: string };
         }[];
     };
