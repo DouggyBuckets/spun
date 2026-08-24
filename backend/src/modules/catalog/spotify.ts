@@ -50,3 +50,33 @@ export async function searchAlbums(query: string) {
     });
     return await response.json() as SpotifyAlbumResponse;
 }
+
+interface SpotifyAlbumDetails {
+    id: string;
+    name: string;
+    artists: {id : string, name: string}[];
+    images: {url: string}[];
+    release_date: string;
+    release_date_precision: string;
+    total_tracks: number;
+    album_type: string;
+    tracks: {
+        items: {
+            id: string;
+            name: string;
+            track_number: number;
+            duration_ms: number;
+            external_urls: { spotify: string };
+        }[];
+    };
+}
+
+export async function getAlbum(spotifyId: string) {
+    const token = await getSpotifyToken();
+    const response = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    return await response.json() as SpotifyAlbumDetails;
+}
