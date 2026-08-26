@@ -98,7 +98,9 @@ CREATE TABLE favorites (
     entity_id       INTEGER NOT NULL,
     position        SMALLINT NOT NULL CHECK (position BETWEEN 1 AND 4),
     -- one slot per (user, type, position) — e.g. 4 favorite albums, 4 favorite songs, 4 favorite artists
-    UNIQUE (user_id, favorite_type, position)
+    UNIQUE (user_id, favorite_type, position),
+    -- prevents the same entity from occupying more than one slot at once
+    UNIQUE (user_id, favorite_type, entity_id)
 );
 
 -- ============================================================
