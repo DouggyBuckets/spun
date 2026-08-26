@@ -2,7 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { db } from "../../db";
 import { requireAuth } from "../../middleware/auth";
-import { getOrCreateAlbum, getOrCreateSongByTrackId } from "../catalog/catalogImport";
+import { getOrCreateAlbum, getOrCreateSongByTrackId, getAlbumIdBySpotifyId, getSongIdBySpotifyId } from "../catalog/catalogImport";
+import { notFound } from "../../errors";
 
 const router = Router();
 
@@ -43,6 +44,28 @@ router.post("/songs/:spotifyId", requireAuth, async (req, res) => {
         [req.user!.id, songId, score]
     );
     res.json(result.rows[0]);
+});
+
+router.delete("/albums/:spotifyId", requireAuth, async (req, res) => {
+    const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
+    if (!albumId) throw notFound("Album not found");
+
+    await db.query(
+        `DELETE FROM ratings WHERE user_id = $1 AND entity_type = 'album' AND entity_id = $2`,
+        [req.user!.id, albumId]
+    );
+    res.json({ message: "Rating deleted successfully" });
+});
+
+router.delete("/songs/:spotifyId", requireAuth, async (req, res) => {
+    const songId = await getSongIdBySpotifyId(req.params.spotifyId as string);
+    if (!songId) throw notFound("Song not found");
+
+    await db.query(
+        `DELETE FROM ratings WHERE user_id = $1 AND entity_type = 'song' AND entity_id = $2`,
+        [req.user!.id, songId]
+    );
+    res.json({ message: "Rating deleted successfully" });
 });
 
 export default router;
