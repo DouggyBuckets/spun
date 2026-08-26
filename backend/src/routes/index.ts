@@ -4,6 +4,7 @@ import userRoutes from "../modules/users/users.routes";
 import catalogRoutes from "../modules/catalog/catalog.routes";
 import ratingRoutes from "../modules/ratings/ratings.routes";
 import reviewRoutes from "../modules/reviews/reviews.routes";
+import likeRoutes from "../modules/likes/likes.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -11,5 +12,6 @@ router.use("/users", userRoutes);
 router.use("/catalog", catalogRoutes);
 router.use("/ratings", ratingRoutes);
 router.use("/reviews", reviewRoutes);
+router.use("/likes", likeRoutes);
 
 export default router;
