@@ -161,3 +161,15 @@ export async function getAlbum(spotifyId: string) {
     if (!response.ok) throw notFound("Album not found");
     return await response.json() as SpotifyAlbumDetails;
 }
+
+export async function getArtist(spotifyId: string) {
+    const token = await getSpotifyToken();
+    const response = await fetch(`https://api.spotify.com/v1/artists/${spotifyId}`, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) throw notFound("Artist not found");
+    return await response.json() as { id: string; name: string; images: { url: string }[] };
+}

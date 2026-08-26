@@ -1,5 +1,5 @@
 import { db } from "../../db";
-import { getAlbum } from "./spotify";
+import { getAlbum, getArtist } from "./spotify";
 import { notFound } from "../../errors";
 
 function normalizeReleaseDate(releaseDate: string, precision: string): string {
@@ -93,4 +93,25 @@ export async function getSongIdBySpotifyId(spotifyId: string) {
         `SELECT id FROM songs WHERE external_id = $1`, [spotifyId]
     );
     return result.rows[0]?.id;
+}
+
+export async function getArtistIdBySpotifyId(spotifyId: string) {
+    const result = await db.query<{ id: number }>(
+        `SELECT id FROM artists WHERE external_id = $1`, [spotifyId]
+    );
+    return result.rows[0]?.id;
+}
+
+export async function getOrCreateArtistBySpotifyId(spotifyId: string) {
+    const result = await db.query<{ id: number }>(
+        `SELECT id FROM artists WHERE external_id = $1`, [spotifyId]
+    );
+    if (result.rows[0]) return result.rows[0].id;
+
+    const artistDetails = await getArtist(spotifyId);
+    const insertResult = await db.query<{ id: number }>(
+        `INSERT into artists (external_id, name) VALUES ($1, $2)
+        RETURNING id`, [artistDetails.id, artistDetails.name]
+    );
+    return insertResult.rows[0]!.id;
 }
