@@ -128,7 +128,6 @@ CREATE TABLE reviews (
     entity_id       INTEGER NOT NULL,
     rating_id       INTEGER REFERENCES ratings(id) ON DELETE SET NULL,  -- optional link to a rating
     body            TEXT NOT NULL,
-    contains_spoilers BOOLEAN NOT NULL DEFAULT false,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );

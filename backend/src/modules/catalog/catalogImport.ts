@@ -22,7 +22,7 @@ export async function getOrCreateArtist(spotifyId: string, name: string) {
 }
 
 export async function getOrCreateAlbum(spotifyId: string) {
-    const result = await db.query(
+    const result = await db.query<{ id: number }>(
         `SELECT id FROM albums WHERE external_id = $1`, [spotifyId]
     );
     if (result.rows[0]) return result.rows[0].id;
@@ -74,7 +74,7 @@ export async function getOrCreateAlbum(spotifyId: string) {
 export async function getOrCreateSongByTrackId(spotifyTrackId: string, albumSpotifyId: string) {
     await getOrCreateAlbum(albumSpotifyId); // Ensure album and its songs are created
 
-    const result = await db.query(
+    const result = await db.query<{ id: number }>(
         `SELECT id FROM songs WHERE external_id = $1`, [spotifyTrackId]
     );
     if (result.rows[0]) return result.rows[0].id;
