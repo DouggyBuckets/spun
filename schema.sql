@@ -150,6 +150,21 @@ CREATE TABLE likes (
 CREATE INDEX idx_likes_entity ON likes(entity_type, entity_id);
 
 -- ============================================================
+-- LISTEN LATER — a personal queue, like Letterboxd's watchlist.
+-- Distinct from LISTS: singular per user, unranked, unnamed —
+-- not one of the user's own arbitrary curated lists.
+-- ============================================================
+CREATE TABLE listen_later (
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entity_type     entity_type NOT NULL CHECK (entity_type IN ('album', 'song')),
+    entity_id       INTEGER NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, entity_type, entity_id)
+);
+CREATE INDEX idx_listen_later_entity ON listen_later(entity_type, entity_id);
+
+-- ============================================================
 -- LISTS — user-curated lists that can hold albums, songs, or artists
 -- ============================================================
 CREATE TABLE lists (
