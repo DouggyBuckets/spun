@@ -16,7 +16,7 @@ async function findRatingId(userId: number, entityType: "album" | "song", entity
 }
 
 const reviewSchema = z.object({
-    body: z.string().min(1),
+    body: z.string().min(1).max(20000),
 });
 
 router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
@@ -34,7 +34,7 @@ router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
 });
 
 const reviewSongSchema = z.object({
-    body: z.string().min(1),
+    body: z.string().min(1).max(20000),
     albumSpotifyId: z.string(),
 });
 
