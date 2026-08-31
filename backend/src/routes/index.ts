@@ -9,6 +9,7 @@ import favoriteRoutes from "../modules/favorites/favorites.routes";
 import listRoutes from "../modules/lists/lists.routes";
 import listenLaterRoutes from "../modules/listenLater/listenLater.routes";
 import followRoutes from "../modules/follows/follows.routes";
+import spinRoutes from "../modules/spins/spins.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -21,5 +22,6 @@ router.use("/favorites", favoriteRoutes);
 router.use("/lists", listRoutes);
 router.use("/listen-later", listenLaterRoutes);
 router.use("/follows", followRoutes);
+router.use("/spins", spinRoutes);
 
 export default router;

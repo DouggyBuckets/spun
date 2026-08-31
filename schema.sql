@@ -137,6 +137,25 @@ CREATE INDEX idx_reviews_entity ON reviews(entity_type, entity_id);
 CREATE INDEX idx_reviews_user ON reviews(user_id);
 
 -- ============================================================
+-- SPINS — a listening log/diary, like Letterboxd's diary: distinct
+-- from ratings (one per user+entity, overwritten on re-rate), a spin
+-- is a discrete listening event and multiple are allowed per entity
+-- (relistens), each with its own date, optionally linked to a
+-- rating and/or a specific review from that listen.
+-- ============================================================
+CREATE TABLE spins (
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entity_type     entity_type NOT NULL CHECK (entity_type IN ('album', 'song')),
+    entity_id       INTEGER NOT NULL,
+    listened_on     DATE NOT NULL DEFAULT CURRENT_DATE,
+    rating_id       INTEGER REFERENCES ratings(id) ON DELETE SET NULL,
+    review_id       INTEGER REFERENCES reviews(id) ON DELETE SET NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_spins_user ON spins(user_id, listened_on DESC);
+
+-- ============================================================
 -- LIKES — quick "heart" on a song or album
 -- ============================================================
 CREATE TABLE likes (
