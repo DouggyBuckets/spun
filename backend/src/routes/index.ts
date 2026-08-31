@@ -8,6 +8,7 @@ import likeRoutes from "../modules/likes/likes.routes";
 import favoriteRoutes from "../modules/favorites/favorites.routes";
 import listRoutes from "../modules/lists/lists.routes";
 import listenLaterRoutes from "../modules/listenLater/listenLater.routes";
+import followRoutes from "../modules/follows/follows.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -19,5 +20,6 @@ router.use("/likes", likeRoutes);
 router.use("/favorites", favoriteRoutes);
 router.use("/lists", listRoutes);
 router.use("/listen-later", listenLaterRoutes);
+router.use("/follows", followRoutes);
 
 export default router;
