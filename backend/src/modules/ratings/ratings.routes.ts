@@ -11,6 +11,20 @@ const rateSchema = z.object({
     score: z.number().int().min(1).max(10),
 });
 
+router.get("/albums/:spotifyId", requireAuth, async (req, res) => {
+    const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
+    if (!albumId) {
+        res.json({ score: null });
+        return;
+    }
+
+    const result = await db.query<{ score: number }>(
+        `SELECT score FROM ratings WHERE user_id = $1 AND entity_type = 'album' AND entity_id = $2`,
+        [req.user!.id, albumId]
+    );
+    res.json({ score: result.rows[0]?.score ?? null });
+});
+
 router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
     const { score } = rateSchema.parse(req.body);
     const albumId = await getOrCreateAlbum(req.params.spotifyId as string);
