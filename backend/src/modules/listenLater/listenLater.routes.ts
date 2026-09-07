@@ -12,6 +12,19 @@ import {
 
 const router = Router();
 
+router.get("/albums/:spotifyId", requireAuth, async (req, res) => {
+    const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
+    if (!albumId) {
+        res.json({ inQueue: false });
+        return;
+    }
+    const result = await db.query(
+        `SELECT id FROM listen_later WHERE user_id = $1 AND entity_type = 'album' AND entity_id = $2`,
+        [req.user!.id, albumId]
+    );
+    res.json({ inQueue: !!result.rows[0] });
+});
+
 router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
     const albumId = await getOrCreateAlbum(req.params.spotifyId as string);
     await db.query(
