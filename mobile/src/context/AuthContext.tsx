@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import * as SecureStore from "expo-secure-store";
 import { apiFetch } from "../api/client";
+import { getToken, setToken, deleteToken } from "../api/tokenStorage";
 
 interface User {
     id: number;
@@ -11,6 +11,7 @@ interface AuthContextValue {
     user: User | null;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
+    register: (username: string, email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -23,13 +24,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         (async () => {
             try {
-                const token = await SecureStore.getItemAsync("api_token");
+                const token = await getToken();
                 if (token) {
                     const data = await apiFetch<User>("/auth/me");
                     setUser(data);
                 }
             } catch {
-                await SecureStore.deleteItemAsync("api_token");
+                await deleteToken();
             } finally {
                 setIsLoading(false);
             }
@@ -41,17 +42,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             method: "POST",
             body: JSON.stringify({ email, password }),
         });
-        await SecureStore.setItemAsync("api_token", data.token);
+        await setToken(data.token);
+        setUser(data.user);
+    }
+
+    async function register(username: string, email: string, password: string) {
+        const data = await apiFetch<{ token: string; user: User }>("/auth/register", {
+            method: "POST",
+            body: JSON.stringify({ username, email, password }),
+        });
+        await setToken(data.token);
         setUser(data.user);
     }
 
     async function logout() {
-        await SecureStore.deleteItemAsync("api_token");
+        await deleteToken();
         setUser(null);
     }
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );
