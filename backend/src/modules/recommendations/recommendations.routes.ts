@@ -58,7 +58,8 @@ router.get("/", requireAuth, async (req, res) => {
     const result = await db.query(
         `SELECT r.id, r.entity_type, r.entity_id, r.note, r.is_read, r.created_at,
             u.username AS sender_username, u.display_name AS sender_display_name,
-            COALESCE(al.title, so.title) AS entity_name
+            COALESCE(al.title, so.title) AS entity_name,
+            COALESCE(al.external_id, so.external_id) AS spotify_id
         FROM recommendations r
         JOIN users u ON u.id = r.sender_id
         LEFT JOIN albums al ON al.id = r.entity_id AND r.entity_type = 'album'
