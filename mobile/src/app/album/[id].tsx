@@ -9,7 +9,7 @@ import {
     StyleSheet,
     ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors } from "../../constants/theme";
 import { StarRating } from "../../components/StarRating";
@@ -302,7 +302,22 @@ export default function AlbumDetailScreen() {
                 </View>
             }
             renderItem={({ item }) => (
-                <View style={styles.trackRow}>
+                <Pressable
+                    style={styles.trackRow}
+                    onPress={() =>
+                        router.push({
+                            pathname: "/song/[id]",
+                            params: {
+                                id: item.id,
+                                albumId: album.id,
+                                name: item.name,
+                                artistNames: item.artists.map((a) => a.name).join(", "),
+                                albumName: album.name,
+                                imageUrl: album.images[0]?.url,
+                            },
+                        })
+                    }
+                >
                     <Text style={styles.trackNumber}>{item.track_number}</Text>
                     <View style={styles.trackText}>
                         <Text style={styles.trackName}>{item.name}</Text>
@@ -313,7 +328,7 @@ export default function AlbumDetailScreen() {
                         )}
                     </View>
                     <Text style={styles.trackDuration}>{formatDuration(item.duration_ms)}</Text>
-                </View>
+                </Pressable>
             )}
         />
     );

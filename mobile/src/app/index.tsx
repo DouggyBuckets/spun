@@ -21,7 +21,9 @@ interface NormalizedResult {
     title: string;
     subtitle: string;
     imageUrl: string | null;
-    albumId: string | null;
+    type: "album" | "track" | "artist";
+    albumId?: string;
+    albumName?: string;
 }
 
 interface AlbumSearchResponse {
@@ -62,7 +64,7 @@ async function searchByType(type: SearchType, query: string): Promise<Normalized
             title: album.name,
             subtitle: album.artists.map((a) => a.name).join(", "),
             imageUrl: album.images[0]?.url ?? null,
-            albumId: album.id,
+            type: "album" as const,
         }));
     }
 
@@ -73,7 +75,9 @@ async function searchByType(type: SearchType, query: string): Promise<Normalized
             title: track.name,
             subtitle: track.artists.map((a) => a.name).join(", "),
             imageUrl: track.album.images[0]?.url ?? null,
+            type: "track" as const,
             albumId: track.album.id,
+            albumName: track.album.name,
         }));
     }
 
@@ -83,7 +87,7 @@ async function searchByType(type: SearchType, query: string): Promise<Normalized
         title: artist.name,
         subtitle: "Artist",
         imageUrl: artist.images[0]?.url ?? null,
-        albumId: null,
+        type: "artist" as const,
     }));
 }
 
@@ -165,8 +169,28 @@ export default function Index() {
                 renderItem={({ item }) => (
                     <Pressable
                         style={styles.resultRow}
-                        onPress={() => item.albumId && router.push(`/album/${item.albumId}`)}
-                        disabled={!item.albumId}
+                        onPress={() => {
+                            if (item.type === "album") {
+                                router.push(`/album/${item.id}`);
+                            } else if (item.type === "track") {
+                                router.push({
+                                    pathname: "/song/[id]",
+                                    params: {
+                                        id: item.id,
+                                        albumId: item.albumId!,
+                                        name: item.title,
+                                        artistNames: item.subtitle,
+                                        albumName: item.albumName!,
+                                        imageUrl: item.imageUrl ?? undefined,
+                                    },
+                                });
+                            } else {
+                                router.push({
+                                    pathname: "/artist/[id]",
+                                    params: { id: item.id, name: item.title },
+                                });
+                            }
+                        }}
                     >
                         {item.imageUrl && (
                             <Image source={{ uri: item.imageUrl }} style={styles.cover} />
