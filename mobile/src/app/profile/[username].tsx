@@ -32,6 +32,15 @@ interface FavoriteAlbum {
     cover_url: string | null;
 }
 
+interface ListSummary {
+    id: number;
+    title: string;
+    description: string | null;
+    is_ranked: boolean;
+    is_public: boolean;
+    item_count: number;
+}
+
 interface ActivityEntity {
     entity_type: "album" | "song";
     entity_name: string | null;
@@ -67,6 +76,7 @@ export default function ProfileScreen() {
 
     const [profile, setProfile] = useState<Profile | null>(null);
     const [favorites, setFavorites] = useState<FavoriteAlbum[]>([]);
+    const [lists, setLists] = useState<ListSummary[]>([]);
     const [reviews, setReviews] = useState<ReviewItem[]>([]);
     const [spins, setSpins] = useState<SpinItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -87,18 +97,21 @@ export default function ProfileScreen() {
             (async () => {
                 setError(null);
                 try {
-                    const [profileData, favoritesData, reviewsData, spinsData] = await Promise.all([
-                        apiFetch<Profile>(`/users/${username}`),
-                        apiFetch<FavoriteAlbum[]>(`/favorites/${username}`),
-                        apiFetch<ReviewItem[]>(`/reviews/${username}`),
-                        apiFetch<SpinItem[]>(`/spins/${username}`),
-                    ]);
+                    const [profileData, favoritesData, listsData, reviewsData, spinsData] =
+                        await Promise.all([
+                            apiFetch<Profile>(`/users/${username}`),
+                            apiFetch<FavoriteAlbum[]>(`/favorites/${username}`),
+                            apiFetch<ListSummary[]>(`/lists/user/${username}`),
+                            apiFetch<ReviewItem[]>(`/reviews/${username}`),
+                            apiFetch<SpinItem[]>(`/spins/${username}`),
+                        ]);
                     if (cancelled) return;
                     setProfile(profileData);
                     setIsFollowing(profileData.isFollowing);
                     setDisplayNameInput(profileData.display_name ?? "");
                     setBioInput(profileData.bio ?? "");
                     setFavorites(favoritesData);
+                    setLists(listsData);
                     setReviews(reviewsData);
                     setSpins(spinsData);
                 } catch (err) {
@@ -322,6 +335,30 @@ export default function ProfileScreen() {
                 })}
             </View>
 
+            <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, styles.noMarginTop]}>Lists</Text>
+                {isOwnProfile && (
+                    <Pressable onPress={() => router.push("/lists/new")}>
+                        <Text style={styles.actionLink}>+ New list</Text>
+                    </Pressable>
+                )}
+            </View>
+            {lists.length === 0 && <Text style={styles.emptyText}>No lists yet.</Text>}
+            {lists.map((list) => (
+                <Pressable
+                    key={list.id}
+                    style={styles.activityRow}
+                    onPress={() => router.push(`/lists/${list.id}`)}
+                >
+                    <Text style={styles.activityTitle}>{list.title}</Text>
+                    <Text style={styles.activityMeta}>
+                        {list.item_count} {list.item_count === 1 ? "album" : "albums"}
+                        {list.is_ranked ? " · Ranked" : ""}
+                        {!list.is_public ? " · Private" : ""}
+                    </Text>
+                </Pressable>
+            ))}
+
             <Text style={styles.sectionTitle}>Recent reviews</Text>
             {reviews.length === 0 && <Text style={styles.emptyText}>No reviews yet.</Text>}
             {reviews.map((review) => (
@@ -472,6 +509,16 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         alignSelf: "flex-start",
         marginTop: 20,
+    },
+    sectionHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        width: "100%",
+        marginTop: 20,
+    },
+    noMarginTop: {
+        marginTop: 0,
     },
     favoritesGrid: {
         flexDirection: "row",
