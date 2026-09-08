@@ -125,6 +125,31 @@ router.post("/:id/items/albums/:spotifyId", requireAuth, async (req, res) => {
 });
 
 
+const reorderSchema = z.object({
+    itemIds: z.array(z.number().int()).min(1),
+});
+
+router.patch("/:id/items/reorder", requireAuth, async (req, res) => {
+    const { itemIds } = reorderSchema.parse(req.body);
+
+    const listResult = await db.query<{ id: number; user_id: number }>(
+        `SELECT id, user_id FROM lists WHERE id = $1`,
+        [req.params.id]
+    );
+    const list = listResult.rows[0];
+    if (!list || list.user_id !== req.user!.id) throw notFound("List not found");
+
+    await Promise.all(
+        itemIds.map((itemId, index) =>
+            db.query(
+                `UPDATE list_items SET position = $1 WHERE id = $2 AND list_id = $3`,
+                [index + 1, itemId, list.id]
+            )
+        )
+    );
+    res.json({ message: "Reordered successfully" });
+});
+
 router.delete("/:id/items/albums/:spotifyId", requireAuth, async (req, res) => {
     const listResult = await db.query<{ id: number; user_id: number; is_ranked: boolean}>(
         `SELECT id, user_id, is_ranked from lists WHERE id = $1`,

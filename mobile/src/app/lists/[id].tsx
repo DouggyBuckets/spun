@@ -110,6 +110,26 @@ export default function ListDetailScreen() {
         }
     }
 
+    async function handleMove(index: number, direction: -1 | 1) {
+        if (!list) return;
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= list.items.length) return;
+
+        const previous = list.items;
+        const items = [...list.items];
+        [items[index], items[targetIndex]] = [items[targetIndex]!, items[index]!];
+        setList({ ...list, items });
+
+        try {
+            await apiFetch(`/lists/${id}/items/reorder`, {
+                method: "PATCH",
+                body: JSON.stringify({ itemIds: items.map((item) => item.id) }),
+            });
+        } catch {
+            setList({ ...list, items: previous });
+        }
+    }
+
     async function handleRemoveItem(spotifyId: string) {
         if (!list) return;
         const previous = list;
@@ -228,6 +248,35 @@ export default function ListDetailScreen() {
                         <Image source={{ uri: item.cover_url }} style={styles.itemCover} />
                     )}
                     <Text style={styles.itemTitle}>{item.title}</Text>
+                    {isOwner && list.is_ranked && (
+                        <View style={styles.moveButtons}>
+                            <Pressable
+                                onPress={() => handleMove(index, -1)}
+                                disabled={index === 0}
+                                hitSlop={8}
+                            >
+                                <Text
+                                    style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
+                                >
+                                    ▲
+                                </Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => handleMove(index, 1)}
+                                disabled={index === list.items.length - 1}
+                                hitSlop={8}
+                            >
+                                <Text
+                                    style={[
+                                        styles.moveButton,
+                                        index === list.items.length - 1 && styles.moveButtonDisabled,
+                                    ]}
+                                >
+                                    ▼
+                                </Text>
+                            </Pressable>
+                        </View>
+                    )}
                     {isOwner && (
                         <Pressable
                             onPress={() => handleRemoveItem(item.spotify_id)}
@@ -351,6 +400,18 @@ const styles = StyleSheet.create({
     itemRemove: {
         color: colors.textMuted,
         padding: 4,
+    },
+    moveButtons: {
+        gap: 2,
+    },
+    moveButton: {
+        color: colors.accent,
+        fontSize: 12,
+        textAlign: "center",
+        padding: 2,
+    },
+    moveButtonDisabled: {
+        color: colors.border,
     },
     emptyText: {
         color: colors.textMuted,
