@@ -25,6 +25,20 @@ router.get("/albums/:spotifyId", requireAuth, async (req, res) => {
     res.json({ score: result.rows[0]?.score ?? null });
 });
 
+router.get("/songs/:spotifyId", requireAuth, async (req, res) => {
+    const songId = await getSongIdBySpotifyId(req.params.spotifyId as string);
+    if (!songId) {
+        res.json({ score: null });
+        return;
+    }
+
+    const result = await db.query<{ score: number }>(
+        `SELECT score FROM ratings WHERE user_id = $1 AND entity_type = 'song' AND entity_id = $2`,
+        [req.user!.id, songId]
+    );
+    res.json({ score: result.rows[0]?.score ?? null });
+});
+
 router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
     const { score } = rateSchema.parse(req.body);
     const albumId = await getOrCreateAlbum(req.params.spotifyId as string);
