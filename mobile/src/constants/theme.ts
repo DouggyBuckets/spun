@@ -1,18 +1,21 @@
 export const colors = {
     background: "#121212",
-    surface: "#1E1E1E",
-    surfaceRaised: "#262626",
+    // Bumped up from #1E1E1E/#262626 — those were too close to background to read
+    // as distinct "cards" on a real phone screen, which is why the redesign looked
+    // like nothing had changed even though the structure was correct.
+    surface: "#262626",
+    surfaceRaised: "#333333",
     accent: "#8B5CF6",
-    accentMuted: "#8B5CF633",
+    accentMuted: "#8B5CF64D",
     // Semantic colors so ratings/likes/actions don't all reuse the same purple —
     // gold for ratings/stars and rose for likes are near-universal conventions.
     rating: "#F5A623",
-    ratingMuted: "#F5A62333",
+    ratingMuted: "#F5A6234D",
     like: "#EF476F",
-    likeMuted: "#EF476F33",
+    likeMuted: "#EF476F4D",
     text: "#FFFFFF",
     textMuted: "#A0A0A0",
-    border: "#333333",
+    border: "#3D3D3D",
     error: "#FF6B6B",
 };
 
