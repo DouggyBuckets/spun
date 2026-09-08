@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors } from "../../constants/theme";
 import { StarRating } from "../../components/StarRating";
@@ -33,6 +34,24 @@ interface AlbumDetails {
     tracks: { items: Track[] };
 }
 
+interface RatingResponse {
+    score: number | null;
+    averageScore: number | null;
+    ratingCount: number;
+}
+
+interface AlbumReview {
+    id: number;
+    body: string;
+    score: number | null;
+    created_at: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    like_count: number;
+    liked_by_me: boolean;
+}
+
 function formatDuration(ms: number): string {
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -44,6 +63,9 @@ export default function AlbumDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [album, setAlbum] = useState<AlbumDetails | null>(null);
     const [myRating, setMyRating] = useState<number | null>(null);
+    const [averageScore, setAverageScore] = useState<number | null>(null);
+    const [ratingCount, setRatingCount] = useState(0);
+    const [reviews, setReviews] = useState<AlbumReview[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [ratingError, setRatingError] = useState<string | null>(null);
@@ -74,12 +96,16 @@ export default function AlbumDetailScreen() {
     useEffect(() => {
         (async () => {
             try {
-                const [albumData, ratingData] = await Promise.all([
+                const [albumData, ratingData, reviewsData] = await Promise.all([
                     apiFetch<AlbumDetails>(`/catalog/albums/${id}`),
-                    apiFetch<{ score: number | null }>(`/ratings/albums/${id}`),
+                    apiFetch<RatingResponse>(`/ratings/albums/${id}`),
+                    apiFetch<AlbumReview[]>(`/reviews/albums/${id}`),
                 ]);
                 setAlbum(albumData);
                 setMyRating(ratingData.score);
+                setAverageScore(ratingData.averageScore);
+                setRatingCount(ratingData.ratingCount);
+                setReviews(reviewsData);
             } catch (err) {
                 setError(err instanceof ApiError ? err.message : "Something went wrong");
             } finally {
@@ -87,6 +113,36 @@ export default function AlbumDetailScreen() {
             }
         })();
     }, [id]);
+
+    async function refreshReviews() {
+        try {
+            setReviews(await apiFetch<AlbumReview[]>(`/reviews/albums/${id}`));
+        } catch {
+            // non-critical — the new review still posted successfully
+        }
+    }
+
+    async function handleToggleReviewLike(review: AlbumReview) {
+        const next = !review.liked_by_me;
+        setReviews((prev) =>
+            prev.map((r) =>
+                r.id === review.id
+                    ? { ...r, liked_by_me: next, like_count: r.like_count + (next ? 1 : -1) }
+                    : r
+            )
+        );
+        try {
+            await apiFetch(`/reviews/${review.id}/like`, { method: next ? "POST" : "DELETE" });
+        } catch {
+            setReviews((prev) =>
+                prev.map((r) =>
+                    r.id === review.id
+                        ? { ...r, liked_by_me: !next, like_count: r.like_count + (next ? -1 : 1) }
+                        : r
+                )
+            );
+        }
+    }
 
     async function handleRate(score: number) {
         setRatingError(null);
@@ -132,6 +188,7 @@ export default function AlbumDetailScreen() {
             setReviewSubmitted(true);
             setReviewBody("");
             setIsReviewOpen(false);
+            await refreshReviews();
         } catch (err) {
             setReviewError(err instanceof ApiError ? err.message : "Something went wrong");
         } finally {
@@ -197,23 +254,28 @@ export default function AlbumDetailScreen() {
                     </Text>
 
                     <StarRating score={myRating} onRate={handleRate} />
+                    {ratingCount > 0 && (
+                        <Text style={styles.averageRating}>
+                            {averageScore !== null ? (averageScore / 2).toFixed(1) : "—"}/5 average ·{" "}
+                            {ratingCount} {ratingCount === 1 ? "rating" : "ratings"}
+                        </Text>
+                    )}
                     {ratingError && <Text style={styles.error}>{ratingError}</Text>}
 
                     <View style={styles.actionRow}>
                         <Pressable onPress={like.toggle} disabled={like.isLoading}>
-                            <Text style={[styles.actionIcon, like.isOn && styles.actionIconActive]}>
-                                {like.isOn ? "♥" : "♡"}
-                            </Text>
+                            <Ionicons
+                                name={like.isOn ? "heart" : "heart-outline"}
+                                size={26}
+                                color={like.isOn ? colors.accent : colors.textMuted}
+                            />
                         </Pressable>
                         <Pressable onPress={listenLater.toggle} disabled={listenLater.isLoading}>
-                            <Text
-                                style={[
-                                    styles.actionIcon,
-                                    listenLater.isOn && styles.actionIconActive,
-                                ]}
-                            >
-                                🕐
-                            </Text>
+                            <Ionicons
+                                name={listenLater.isOn ? "bookmark" : "bookmark-outline"}
+                                size={26}
+                                color={listenLater.isOn ? colors.accent : colors.textMuted}
+                            />
                         </Pressable>
                         <Pressable onPress={handleLog} disabled={isLogging}>
                             <Text style={styles.actionLink}>
@@ -264,6 +326,42 @@ export default function AlbumDetailScreen() {
                                     </Text>
                                 </Pressable>
                             </View>
+                        </View>
+                    )}
+
+                    {reviews.length > 0 && (
+                        <View style={styles.reviewsSection}>
+                            <Text style={styles.sectionTitle}>Reviews</Text>
+                            {reviews.map((review) => (
+                                <View key={review.id} style={styles.reviewCard}>
+                                    <View style={styles.reviewHeader}>
+                                        <Pressable onPress={() => router.push(`/profile/${review.username}`)}>
+                                            <Text style={styles.reviewAuthor}>
+                                                {review.display_name ?? review.username}
+                                            </Text>
+                                        </Pressable>
+                                        {review.score !== null && (
+                                            <Text style={styles.reviewScore}>
+                                                {review.score / 2}/5
+                                            </Text>
+                                        )}
+                                    </View>
+                                    <Text style={styles.reviewBody}>{review.body}</Text>
+                                    <Pressable
+                                        style={styles.reviewLikeRow}
+                                        onPress={() => handleToggleReviewLike(review)}
+                                    >
+                                        <Ionicons
+                                            name={review.liked_by_me ? "heart" : "heart-outline"}
+                                            size={16}
+                                            color={review.liked_by_me ? colors.accent : colors.textMuted}
+                                        />
+                                        {review.like_count > 0 && (
+                                            <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
+                                        )}
+                                    </Pressable>
+                                </View>
+                            ))}
                         </View>
                     )}
 
@@ -384,16 +482,13 @@ const styles = StyleSheet.create({
         gap: 20,
         marginTop: 4,
     },
-    actionIcon: {
-        fontSize: 26,
-        color: colors.textMuted,
-    },
-    actionIconActive: {
-        color: colors.accent,
-    },
     actionLink: {
         color: colors.accent,
         marginTop: 4,
+    },
+    averageRating: {
+        color: colors.textMuted,
+        fontSize: 13,
     },
     form: {
         width: "100%",
@@ -460,6 +555,51 @@ const styles = StyleSheet.create({
     },
     trackDuration: {
         color: colors.textMuted,
+    },
+    sectionTitle: {
+        color: colors.text,
+        fontSize: 16,
+        fontWeight: "700",
+        alignSelf: "flex-start",
+        marginTop: 8,
+    },
+    reviewsSection: {
+        width: "100%",
+        gap: 12,
+    },
+    reviewCard: {
+        width: "100%",
+        gap: 4,
+        paddingVertical: 8,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+    },
+    reviewHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    reviewAuthor: {
+        color: colors.accent,
+        fontWeight: "600",
+    },
+    reviewScore: {
+        color: colors.textMuted,
+        fontSize: 12,
+    },
+    reviewBody: {
+        color: colors.text,
+        fontSize: 14,
+        textAlign: "left",
+    },
+    reviewLikeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
+    reviewLikeCount: {
+        color: colors.textMuted,
+        fontSize: 12,
     },
     error: {
         color: colors.error,

@@ -3,7 +3,12 @@ import { z } from "zod";
 import { db } from "../../db";
 import { notFound } from "../../errors";
 import { requireAuth } from "../../middleware/auth";
-import { getOrCreateAlbum, getOrCreateSongByTrackId } from "../catalog/catalogImport";
+import {
+    getOrCreateAlbum,
+    getOrCreateSongByTrackId,
+    getAlbumIdBySpotifyId,
+    getSongIdBySpotifyId,
+} from "../catalog/catalogImport";
 
 const router = Router();
 
@@ -46,6 +51,63 @@ router.get("/:username", async (req, res) => {
         [user.id, limit, offset]
     );
     res.json(result.rows);
+});
+
+async function getReviewsForEntity(
+    entityType: "album" | "song",
+    entityId: number,
+    viewerId: number
+) {
+    const result = await db.query(
+        `SELECT r.id, r.body, r.created_at, ra.score,
+            u.username, u.display_name, u.avatar_url,
+            COUNT(rl.id)::int AS like_count,
+            COALESCE(BOOL_OR(rl.user_id = $3), false) AS liked_by_me
+        FROM reviews r
+        JOIN users u ON u.id = r.user_id
+        LEFT JOIN ratings ra ON ra.id = r.rating_id
+        LEFT JOIN review_likes rl ON rl.review_id = r.id
+        WHERE r.entity_type = $1 AND r.entity_id = $2
+        GROUP BY r.id, ra.score, u.username, u.display_name, u.avatar_url
+        ORDER BY like_count DESC, r.created_at DESC`,
+        [entityType, entityId, viewerId]
+    );
+    return result.rows;
+}
+
+router.get("/albums/:spotifyId", requireAuth, async (req, res) => {
+    const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
+    if (!albumId) {
+        res.json([]);
+        return;
+    }
+    res.json(await getReviewsForEntity("album", albumId, req.user!.id));
+});
+
+router.get("/songs/:spotifyId", requireAuth, async (req, res) => {
+    const songId = await getSongIdBySpotifyId(req.params.spotifyId as string);
+    if (!songId) {
+        res.json([]);
+        return;
+    }
+    res.json(await getReviewsForEntity("song", songId, req.user!.id));
+});
+
+router.post("/:id/like", requireAuth, async (req, res) => {
+    await db.query(
+        `INSERT INTO review_likes (review_id, user_id) VALUES ($1, $2)
+        ON CONFLICT (review_id, user_id) DO NOTHING`,
+        [req.params.id, req.user!.id]
+    );
+    res.status(201).json({ message: "Liked" });
+});
+
+router.delete("/:id/like", requireAuth, async (req, res) => {
+    await db.query(
+        `DELETE FROM review_likes WHERE review_id = $1 AND user_id = $2`,
+        [req.params.id, req.user!.id]
+    );
+    res.json({ message: "Unliked" });
 });
 
 const reviewSchema = z.object({
