@@ -77,7 +77,7 @@ export default function AlbumDetailScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [ratingError, setRatingError] = useState<string | null>(null);
-    const [isRatingExpanded, setIsRatingExpanded] = useState(false);
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const like = useToggle(`/likes/albums/${id}`, "liked");
@@ -162,7 +162,7 @@ export default function AlbumDetailScreen() {
         setRatingError(null);
         const previousRating = myRating;
         setMyRating(score);
-        setIsRatingExpanded(false);
+        setIsRatingModalOpen(false);
         try {
             await apiFetch(`/ratings/albums/${id}`, {
                 method: "POST",
@@ -288,11 +288,8 @@ export default function AlbumDetailScreen() {
                             <Text style={styles.statLabel}>Average</Text>
                         </View>
                         <View style={styles.statDivider} />
-                        <Touchable
-                            style={styles.statColumn}
-                            onPress={() => setIsRatingExpanded((v) => !v)}
-                        >
-                            <View style={styles.statValueRow}>
+                        <Touchable style={styles.statColumn} onPress={() => setIsRatingModalOpen(true)}>
+                            <View style={[styles.statValueRow, styles.yourRatingPill]}>
                                 {myRating !== null && (
                                     <Ionicons name="star" size={13} color={colors.rating} />
                                 )}
@@ -308,16 +305,11 @@ export default function AlbumDetailScreen() {
                             <Text style={styles.statLabel}>Your Rating</Text>
                         </Touchable>
                     </View>
-                    {isRatingExpanded && (
-                        <View style={styles.ratingPickerRow}>
-                            <StarRating score={myRating} onRate={handleRate} />
-                        </View>
-                    )}
                     {ratingError && <Text style={styles.error}>{ratingError}</Text>}
 
                     <View style={styles.actionRow}>
                         <Touchable
-                            style={[styles.actionButton, like.isOn && styles.actionButtonLikeActive]}
+                            style={[styles.actionButton, styles.actionButtonLike]}
                             onPress={like.toggle}
                             disabled={like.isLoading}
                         >
@@ -328,7 +320,7 @@ export default function AlbumDetailScreen() {
                             />
                         </Touchable>
                         <Touchable
-                            style={[styles.actionButton, listenLater.isOn && styles.actionButtonActive]}
+                            style={[styles.actionButton, styles.actionButtonTinted]}
                             onPress={listenLater.toggle}
                             disabled={listenLater.isLoading}
                         >
@@ -338,6 +330,12 @@ export default function AlbumDetailScreen() {
                                 color={listenLater.isOn ? colors.accent : colors.textMuted}
                             />
                         </Touchable>
+                        <Touchable
+                            style={[styles.actionButton, styles.actionButtonTinted]}
+                            onPress={() => setIsReviewOpen((v) => !v)}
+                        >
+                            <Ionicons name="create-outline" size={22} color={colors.accent} />
+                        </Touchable>
                         <Touchable style={styles.actionButton} onPress={() => setIsMenuOpen(true)}>
                             <Ionicons name="ellipsis-horizontal" size={22} color={colors.textMuted} />
                         </Touchable>
@@ -346,6 +344,24 @@ export default function AlbumDetailScreen() {
                     {(like.error || listenLater.error || logError) && (
                         <Text style={styles.error}>{like.error || listenLater.error || logError}</Text>
                     )}
+
+                    <Modal
+                        visible={isRatingModalOpen}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setIsRatingModalOpen(false)}
+                    >
+                        <Touchable
+                            style={styles.ratingModalBackdrop}
+                            onPress={() => setIsRatingModalOpen(false)}
+                        />
+                        <View style={styles.ratingModalCenter} pointerEvents="box-none">
+                            <View style={styles.ratingModalCard}>
+                                <Text style={styles.ratingModalTitle}>Rate this Album</Text>
+                                <StarRating score={myRating} onRate={handleRate} />
+                            </View>
+                        </View>
+                    </Modal>
 
                     <Modal
                         visible={isMenuOpen}
@@ -377,18 +393,6 @@ export default function AlbumDetailScreen() {
                             >
                                 <Ionicons name="list-outline" size={20} color={colors.text} />
                                 <Text style={styles.menuRowText}>Add to list</Text>
-                            </Touchable>
-                            <Touchable
-                                style={styles.menuRow}
-                                onPress={() => {
-                                    setIsMenuOpen(false);
-                                    setIsReviewOpen(true);
-                                }}
-                            >
-                                <Ionicons name="create-outline" size={20} color={colors.text} />
-                                <Text style={styles.menuRowText}>
-                                    {reviewSubmitted ? "Write another review" : "Write a review"}
-                                </Text>
                             </Touchable>
                             <Touchable
                                 style={styles.menuRow}
@@ -627,8 +631,11 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         fontSize: 11,
     },
-    ratingPickerRow: {
-        marginTop: spacing.xs,
+    yourRatingPill: {
+        backgroundColor: colors.ratingMuted,
+        borderRadius: radius.pill,
+        paddingVertical: 3,
+        paddingHorizontal: spacing.sm,
     },
     actionRow: {
         flexDirection: "row",
@@ -647,15 +654,47 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
-    actionButtonActive: {
-        backgroundColor: colors.accentMuted,
-    },
-    actionButtonLikeActive: {
+    actionButtonLike: {
         backgroundColor: colors.likeMuted,
+        borderColor: colors.likeMuted,
+    },
+    actionButtonTinted: {
+        backgroundColor: colors.accentMuted,
+        borderColor: colors.accentMuted,
     },
     confirmText: {
         color: colors.accent,
         fontSize: 12,
+    },
+    ratingModalBackdrop: {
+        flex: 1,
+        backgroundColor: "#00000099",
+    },
+    ratingModalCenter: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: spacing.xl,
+    },
+    ratingModalCard: {
+        width: "100%",
+        alignItems: "center",
+        gap: spacing.md,
+        backgroundColor: colors.surfaceRaised,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.lg,
+        ...cardShadow,
+    },
+    ratingModalTitle: {
+        color: colors.text,
+        fontSize: 17,
+        fontWeight: "700",
     },
     menuBackdrop: {
         flex: 1,
