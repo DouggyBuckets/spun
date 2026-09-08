@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { notFound } from "../../errors";
 import { z } from "zod";
 import { requireAuth, optionalAuth } from "../../middleware/auth";
+import { uploadAvatar } from "./cloudinary";
 
 const router = Router();
 
@@ -77,6 +78,24 @@ router.patch("/me", requireAuth, async (req, res) => {
         [displayName ?? null, bio ?? null, avatarUrl ?? null, req.user!.id]
     );
     res.json(result.rows[0]);
+});
+
+const avatarUploadSchema = z.object({
+    image: z.string().regex(
+        /^data:image\/(png|jpe?g|webp);base64,/,
+        "Must be a base64 image data URI"
+    ),
+});
+
+router.post("/me/avatar", requireAuth, async (req, res) => {
+    const { image } = avatarUploadSchema.parse(req.body);
+    const url = await uploadAvatar(image, `user_${req.user!.id}`);
+
+    const result = await db.query<{ avatar_url: string }>(
+        `UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING avatar_url`,
+        [url, req.user!.id]
+    );
+    res.json({ avatar_url: result.rows[0]!.avatar_url });
 });
 
 export default router;

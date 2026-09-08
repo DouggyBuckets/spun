@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors } from "../../constants/theme";
@@ -91,6 +92,9 @@ export default function ProfileScreen() {
     const [isSavingProfile, setIsSavingProfile] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
 
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [avatarError, setAvatarError] = useState<string | null>(null);
+
     useFocusEffect(
         useCallback(() => {
             let cancelled = false;
@@ -155,6 +159,38 @@ export default function ProfileScreen() {
         }
     }
 
+    async function handlePickAvatar() {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permission.status !== "granted") {
+            setAvatarError("Permission to access photos is required");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: "images",
+            quality: 0.7,
+            base64: true,
+            allowsEditing: true,
+            aspect: [1, 1],
+        });
+        if (result.canceled || !result.assets[0]?.base64) return;
+
+        setAvatarError(null);
+        setIsUploadingAvatar(true);
+        try {
+            const dataUri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+            const updated = await apiFetch<{ avatar_url: string }>("/users/me/avatar", {
+                method: "POST",
+                body: JSON.stringify({ image: dataUri }),
+            });
+            setProfile((p) => (p ? { ...p, avatar_url: updated.avatar_url } : p));
+        } catch (err) {
+            setAvatarError(err instanceof ApiError ? err.message : "Something went wrong");
+        } finally {
+            setIsUploadingAvatar(false);
+        }
+    }
+
     async function handleSaveProfile() {
         setSaveError(null);
         setIsSavingProfile(true);
@@ -195,15 +231,30 @@ export default function ProfileScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            {profile.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-                <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarInitial}>
-                        {(profile.display_name ?? profile.username)[0].toUpperCase()}
-                    </Text>
-                </View>
-            )}
+            <Pressable
+                onPress={isOwnProfile ? handlePickAvatar : undefined}
+                disabled={!isOwnProfile || isUploadingAvatar}
+            >
+                {profile.avatar_url ? (
+                    <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+                ) : (
+                    <View style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarInitial}>
+                            {(profile.display_name ?? profile.username)[0].toUpperCase()}
+                        </Text>
+                    </View>
+                )}
+                {isOwnProfile && (
+                    <View style={styles.avatarBadge}>
+                        {isUploadingAvatar ? (
+                            <ActivityIndicator size="small" color={colors.text} />
+                        ) : (
+                            <Text style={styles.avatarBadgeText}>Edit</Text>
+                        )}
+                    </View>
+                )}
+            </Pressable>
+            {avatarError && <Text style={styles.error}>{avatarError}</Text>}
 
             {!isEditing ? (
                 <>
@@ -424,6 +475,20 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         justifyContent: "center",
         alignItems: "center",
+    },
+    avatarBadge: {
+        position: "absolute",
+        bottom: 8,
+        alignSelf: "center",
+        backgroundColor: colors.accent,
+        borderRadius: 10,
+        paddingVertical: 2,
+        paddingHorizontal: 8,
+    },
+    avatarBadgeText: {
+        color: colors.text,
+        fontSize: 11,
+        fontWeight: "600",
     },
     avatarInitial: {
         color: colors.textMuted,
