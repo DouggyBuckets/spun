@@ -15,7 +15,14 @@ async function findRatingId(userId: number, entityType: "album" | "song", entity
     return result.rows[0]?.id ?? null;
 }
 
+const paginationSchema = z.object({
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0),
+});
+
 router.get("/:username", async (req, res) => {
+    const { limit, offset } = paginationSchema.parse(req.query);
+
     const userResult = await db.query<{ id: number }>(
         `SELECT id FROM users WHERE username = $1`, [req.params.username]
     );
@@ -25,6 +32,7 @@ router.get("/:username", async (req, res) => {
     const result = await db.query(
         `SELECT r.id, r.entity_type, r.body, r.created_at, ra.score,
             COALESCE(al.title, so.title) AS entity_name,
+            COALESCE(al.cover_url, songAlbum.cover_url) AS cover_url,
             COALESCE(al.external_id, so.external_id) AS spotify_id,
             songAlbum.external_id AS album_spotify_id
         FROM reviews r
@@ -34,8 +42,8 @@ router.get("/:username", async (req, res) => {
         LEFT JOIN ratings ra ON ra.id = r.rating_id
         WHERE r.user_id = $1
         ORDER BY r.created_at DESC
-        LIMIT 20`,
-        [user.id]
+        LIMIT $2 OFFSET $3`,
+        [user.id, limit, offset]
     );
     res.json(result.rows);
 });

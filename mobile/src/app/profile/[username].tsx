@@ -276,9 +276,14 @@ export default function ProfileScreen() {
             </View>
 
             {isOwnProfile && !isEditing && (
-                <Pressable onPress={() => setIsEditing(true)}>
-                    <Text style={styles.actionLink}>Edit profile</Text>
-                </Pressable>
+                <View style={styles.ownProfileLinks}>
+                    <Pressable onPress={() => setIsEditing(true)}>
+                        <Text style={styles.actionLink}>Edit profile</Text>
+                    </Pressable>
+                    <Pressable onPress={() => router.push("/activity")}>
+                        <Text style={styles.actionLink}>My activity</Text>
+                    </Pressable>
+                </View>
             )}
 
             {!isOwnProfile && isFollowing !== null && (
@@ -455,6 +460,10 @@ const styles = StyleSheet.create({
     actionLink: {
         color: colors.accent,
         marginTop: 4,
+    },
+    ownProfileLinks: {
+        flexDirection: "row",
+        gap: 20,
     },
     button: {
         backgroundColor: colors.accent,
