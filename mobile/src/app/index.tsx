@@ -14,16 +14,17 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
 import { colors } from "../constants/theme";
 
-type SearchType = "albums" | "tracks" | "artists";
+type SearchType = "albums" | "tracks" | "artists" | "users";
 
 interface NormalizedResult {
     id: string;
     title: string;
     subtitle: string;
     imageUrl: string | null;
-    type: "album" | "track" | "artist";
+    type: "album" | "track" | "artist" | "user";
     albumId?: string;
     albumName?: string;
+    username?: string;
 }
 
 interface AlbumSearchResponse {
@@ -54,6 +55,13 @@ interface ArtistSearchResponse {
     };
 }
 
+interface UserSearchResult {
+    id: number;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+}
+
 async function searchByType(type: SearchType, query: string): Promise<NormalizedResult[]> {
     const q = encodeURIComponent(query);
 
@@ -81,13 +89,25 @@ async function searchByType(type: SearchType, query: string): Promise<Normalized
         }));
     }
 
-    const data = await apiFetch<ArtistSearchResponse>(`/catalog/search/artists?query=${q}`);
-    return data.artists.items.map((artist) => ({
-        id: artist.id,
-        title: artist.name,
-        subtitle: "Artist",
-        imageUrl: artist.images[0]?.url ?? null,
-        type: "artist" as const,
+    if (type === "artists") {
+        const data = await apiFetch<ArtistSearchResponse>(`/catalog/search/artists?query=${q}`);
+        return data.artists.items.map((artist) => ({
+            id: artist.id,
+            title: artist.name,
+            subtitle: "Artist",
+            imageUrl: artist.images[0]?.url ?? null,
+            type: "artist" as const,
+        }));
+    }
+
+    const data = await apiFetch<UserSearchResult[]>(`/users?query=${q}`);
+    return data.map((result) => ({
+        id: String(result.id),
+        title: result.display_name ?? result.username,
+        subtitle: `@${result.username}`,
+        imageUrl: result.avatar_url,
+        type: "user" as const,
+        username: result.username,
     }));
 }
 
@@ -150,7 +170,7 @@ export default function Index() {
             />
 
             <View style={styles.tabs}>
-                {(["albums", "tracks", "artists"] as SearchType[]).map((type) => (
+                {(["albums", "tracks", "artists", "users"] as SearchType[]).map((type) => (
                     <Pressable
                         key={type}
                         style={[styles.tab, searchType === type && styles.tabActive]}
@@ -187,11 +207,13 @@ export default function Index() {
                                         imageUrl: item.imageUrl ?? undefined,
                                     },
                                 });
-                            } else {
+                            } else if (item.type === "artist") {
                                 router.push({
                                     pathname: "/artist/[id]",
                                     params: { id: item.id, name: item.title },
                                 });
+                            } else {
+                                router.push(`/profile/${item.username}`);
                             }
                         }}
                     >

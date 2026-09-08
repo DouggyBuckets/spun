@@ -236,12 +236,30 @@ export default function ProfileScreen() {
             )}
 
             <View style={styles.statsRow}>
-                <Text style={styles.stat}>
-                    <Text style={styles.statNumber}>{profile.followerCount}</Text> followers
-                </Text>
-                <Text style={styles.stat}>
-                    <Text style={styles.statNumber}>{profile.followingCount}</Text> following
-                </Text>
+                <Pressable
+                    onPress={() =>
+                        router.push({
+                            pathname: "/follows/[username]",
+                            params: { username, tab: "followers" },
+                        })
+                    }
+                >
+                    <Text style={styles.stat}>
+                        <Text style={styles.statNumber}>{profile.followerCount}</Text> followers
+                    </Text>
+                </Pressable>
+                <Pressable
+                    onPress={() =>
+                        router.push({
+                            pathname: "/follows/[username]",
+                            params: { username, tab: "following" },
+                        })
+                    }
+                >
+                    <Text style={styles.stat}>
+                        <Text style={styles.statNumber}>{profile.followingCount}</Text> following
+                    </Text>
+                </Pressable>
             </View>
 
             {isOwnProfile && !isEditing && (

@@ -6,6 +6,23 @@ import { requireAuth, optionalAuth } from "../../middleware/auth";
 
 const router = Router();
 
+router.get("/", async (req, res) => {
+    const query = typeof req.query.query === "string" ? req.query.query.trim() : "";
+    if (!query) {
+        res.json([]);
+        return;
+    }
+
+    const result = await db.query(
+        `SELECT id, username, display_name, avatar_url FROM users
+        WHERE username ILIKE $1 OR display_name ILIKE $1
+        ORDER BY username
+        LIMIT 20`,
+        [`%${query}%`]
+    );
+    res.json(result.rows);
+});
+
 router.get("/:username", optionalAuth, async (req, res) => {
     const result = await db.query<{
         id: number;
