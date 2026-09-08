@@ -127,6 +127,9 @@ export default function Index() {
             <View style={styles.header}>
                 <Text style={styles.username}>{user.username}</Text>
                 <View style={styles.headerLinks}>
+                    <Pressable onPress={() => router.push(`/profile/${user.username}`)}>
+                        <Text style={styles.link}>Profile</Text>
+                    </Pressable>
                     <Pressable onPress={() => router.push("/recommendations")}>
                         <Text style={styles.link}>Inbox</Text>
                     </Pressable>

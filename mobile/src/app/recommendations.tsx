@@ -92,8 +92,13 @@ export default function RecommendationsScreen() {
                         {!item.is_read && <View style={styles.unreadDot} />}
                         <View style={styles.rowText}>
                             <Text style={styles.sender}>
-                                {item.sender_display_name ?? item.sender_username} recommended{" "}
-                                {item.entity_name ?? "something"}
+                                <Text
+                                    style={styles.senderLink}
+                                    onPress={() => router.push(`/profile/${item.sender_username}`)}
+                                >
+                                    {item.sender_display_name ?? item.sender_username}
+                                </Text>{" "}
+                                recommended {item.entity_name ?? "something"}
                             </Text>
                             {item.note && <Text style={styles.note}>"{item.note}"</Text>}
                         </View>
@@ -139,6 +144,10 @@ const styles = StyleSheet.create({
     },
     sender: {
         color: colors.text,
+    },
+    senderLink: {
+        color: colors.accent,
+        fontWeight: "600",
     },
     note: {
         color: colors.textMuted,

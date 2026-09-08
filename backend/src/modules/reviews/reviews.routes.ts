@@ -15,6 +15,31 @@ async function findRatingId(userId: number, entityType: "album" | "song", entity
     return result.rows[0]?.id ?? null;
 }
 
+router.get("/:username", async (req, res) => {
+    const userResult = await db.query<{ id: number }>(
+        `SELECT id FROM users WHERE username = $1`, [req.params.username]
+    );
+    const user = userResult.rows[0];
+    if (!user) throw notFound("User not found");
+
+    const result = await db.query(
+        `SELECT r.id, r.entity_type, r.body, r.created_at, ra.score,
+            COALESCE(al.title, so.title) AS entity_name,
+            COALESCE(al.external_id, so.external_id) AS spotify_id,
+            songAlbum.external_id AS album_spotify_id
+        FROM reviews r
+        LEFT JOIN albums al ON al.id = r.entity_id AND r.entity_type = 'album'
+        LEFT JOIN songs so ON so.id = r.entity_id AND r.entity_type = 'song'
+        LEFT JOIN albums songAlbum ON songAlbum.id = so.album_id
+        LEFT JOIN ratings ra ON ra.id = r.rating_id
+        WHERE r.user_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT 20`,
+        [user.id]
+    );
+    res.json(result.rows);
+});
+
 const reviewSchema = z.object({
     body: z.string().min(1).max(20000),
 });
