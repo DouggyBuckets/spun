@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { View, Text, TextInput, Switch, Pressable, StyleSheet } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors } from "../../constants/theme";
 
 export default function NewListScreen() {
+    const { albumId } = useLocalSearchParams<{ albumId?: string }>();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [isRanked, setIsRanked] = useState(false);
@@ -26,7 +27,12 @@ export default function NewListScreen() {
                     isPublic,
                 }),
             });
-            router.replace(`/lists/${list.id}`);
+            if (albumId) {
+                await apiFetch(`/lists/${list.id}/items/albums/${albumId}`, { method: "POST" });
+                router.back();
+            } else {
+                router.replace(`/lists/${list.id}`);
+            }
         } catch (err) {
             setError(err instanceof ApiError ? err.message : "Something went wrong");
             setIsSaving(false);

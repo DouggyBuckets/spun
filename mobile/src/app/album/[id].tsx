@@ -225,6 +225,14 @@ export default function AlbumDetailScreen() {
                         <Text style={styles.error}>{like.error || listenLater.error || logError}</Text>
                     )}
 
+                    <Pressable
+                        onPress={() =>
+                            router.push({ pathname: "/lists/add-to", params: { albumId: id } })
+                        }
+                    >
+                        <Text style={styles.actionLink}>Add to list</Text>
+                    </Pressable>
+
                     {!isReviewOpen ? (
                         <Pressable onPress={() => setIsReviewOpen(true)}>
                             <Text style={styles.actionLink}>
