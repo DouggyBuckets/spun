@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, TextInput, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import {
+    View,
+    Text,
+    Image,
+    TextInput,
+    ScrollView,
+    StyleSheet,
+    ActivityIndicator,
+    Modal,
+} from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../../api/client";
@@ -41,6 +50,8 @@ export default function SongDetailScreen() {
     const [ratingCount, setRatingCount] = useState(0);
     const [reviews, setReviews] = useState<SongReview[]>([]);
     const [ratingError, setRatingError] = useState<string | null>(null);
+    const [isRatingExpanded, setIsRatingExpanded] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const like = useToggle(`/likes/songs/${id}`, "liked", { albumSpotifyId: albumId });
     const listenLater = useToggle(`/listen-later/songs/${id}`, "inQueue", { albumSpotifyId: albumId });
@@ -113,6 +124,7 @@ export default function SongDetailScreen() {
         setRatingError(null);
         const previous = myRating;
         setMyRating(score);
+        setIsRatingExpanded(false);
         try {
             await apiFetch(`/ratings/songs/${id}`, {
                 method: "POST",
@@ -194,20 +206,39 @@ export default function SongDetailScreen() {
                 <Text style={styles.albumLink}>from {albumName}</Text>
             </Touchable>
 
-            <View style={styles.ratingCard}>
-                <StarRating score={myRating} onRate={handleRate} />
-                {ratingCount > 0 ? (
-                    <View style={styles.averageRatingRow}>
-                        <Ionicons name="star" size={12} color={colors.rating} />
-                        <Text style={styles.averageRating}>
-                            {averageScore !== null ? (averageScore / 2).toFixed(1) : "—"}/5 average ·{" "}
-                            {ratingCount} {ratingCount === 1 ? "rating" : "ratings"}
+            <View style={styles.statsCard}>
+                <View style={styles.statColumn}>
+                    <Text style={styles.statNumber}>{ratingCount}</Text>
+                    <Text style={styles.statLabel}>{ratingCount === 1 ? "Rating" : "Ratings"}</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statColumn}>
+                    <View style={styles.statValueRow}>
+                        {averageScore !== null && (
+                            <Ionicons name="star" size={13} color={colors.rating} />
+                        )}
+                        <Text style={styles.statNumber}>
+                            {averageScore !== null ? (averageScore / 2).toFixed(1) : "—"}
                         </Text>
                     </View>
-                ) : (
-                    <Text style={styles.averageRating}>No ratings yet — be the first</Text>
-                )}
+                    <Text style={styles.statLabel}>Average</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <Touchable style={styles.statColumn} onPress={() => setIsRatingExpanded((v) => !v)}>
+                    <View style={styles.statValueRow}>
+                        {myRating !== null && <Ionicons name="star" size={13} color={colors.rating} />}
+                        <Text style={[styles.statNumber, myRating === null && styles.statNumberMuted]}>
+                            {myRating !== null ? (myRating / 2).toFixed(1) : "Rate"}
+                        </Text>
+                    </View>
+                    <Text style={styles.statLabel}>Your Rating</Text>
+                </Touchable>
             </View>
+            {isRatingExpanded && (
+                <View style={styles.ratingPickerRow}>
+                    <StarRating score={myRating} onRate={handleRate} />
+                </View>
+            )}
             {ratingError && <Text style={styles.error}>{ratingError}</Text>}
 
             <View style={styles.actionRow}>
@@ -233,39 +264,62 @@ export default function SongDetailScreen() {
                         color={listenLater.isOn ? colors.accent : colors.textMuted}
                     />
                 </Touchable>
-                <Touchable
-                    style={[styles.actionButton, justLogged && styles.actionButtonActive]}
-                    onPress={handleLog}
-                    disabled={isLogging}
-                >
-                    {isLogging ? (
-                        <ActivityIndicator size="small" color={colors.textMuted} />
-                    ) : (
-                        <Ionicons
-                            name={justLogged ? "checkmark-circle" : "add-circle-outline"}
-                            size={22}
-                            color={justLogged ? colors.accent : colors.textMuted}
-                        />
-                    )}
+                <Touchable style={styles.actionButton} onPress={() => setIsMenuOpen(true)}>
+                    <Ionicons name="ellipsis-horizontal" size={22} color={colors.textMuted} />
                 </Touchable>
             </View>
-            <View style={styles.actionLabelRow}>
-                <Text style={styles.actionLabel}>Like</Text>
-                <Text style={styles.actionLabel}>Save</Text>
-                <Text style={styles.actionLabel}>Log</Text>
-            </View>
+            {justLogged && <Text style={styles.confirmText}>Logged ✓</Text>}
             {(like.error || listenLater.error || logError) && (
                 <Text style={styles.error}>{like.error || listenLater.error || logError}</Text>
             )}
 
-            {!isReviewOpen ? (
-                <Touchable style={styles.listRow} onPress={() => setIsReviewOpen(true)}>
-                    <Ionicons name="create-outline" size={18} color={colors.accent} />
-                    <Text style={styles.listRowText}>
-                        {reviewSubmitted ? "Review posted ✓ — write another" : "Write a review"}
-                    </Text>
-                </Touchable>
-            ) : (
+            <Modal
+                visible={isMenuOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsMenuOpen(false)}
+            >
+                <Touchable style={styles.menuBackdrop} onPress={() => setIsMenuOpen(false)} />
+                <View style={styles.menuSheet}>
+                    <Touchable
+                        style={styles.menuRow}
+                        onPress={() => {
+                            setIsMenuOpen(false);
+                            handleLog();
+                        }}
+                        disabled={isLogging}
+                    >
+                        <Ionicons name="add-circle-outline" size={20} color={colors.text} />
+                        <Text style={styles.menuRowText}>{isLogging ? "Logging..." : "Log listen"}</Text>
+                    </Touchable>
+                    <Touchable
+                        style={styles.menuRow}
+                        onPress={() => {
+                            setIsMenuOpen(false);
+                            setIsReviewOpen(true);
+                        }}
+                    >
+                        <Ionicons name="create-outline" size={20} color={colors.text} />
+                        <Text style={styles.menuRowText}>
+                            {reviewSubmitted ? "Write another review" : "Write a review"}
+                        </Text>
+                    </Touchable>
+                    <Touchable
+                        style={styles.menuRow}
+                        onPress={() => {
+                            setIsMenuOpen(false);
+                            setIsRecommendOpen(true);
+                        }}
+                    >
+                        <Ionicons name="paper-plane-outline" size={20} color={colors.text} />
+                        <Text style={styles.menuRowText}>
+                            {recommendSent ? "Recommend to someone else" : "Recommend to a friend"}
+                        </Text>
+                    </Touchable>
+                </View>
+            </Modal>
+
+            {isReviewOpen && (
                 <View style={styles.formCard}>
                     <TextInput
                         style={styles.textArea}
@@ -293,14 +347,7 @@ export default function SongDetailScreen() {
                 </View>
             )}
 
-            {!isRecommendOpen ? (
-                <Touchable style={styles.listRow} onPress={() => setIsRecommendOpen(true)}>
-                    <Ionicons name="paper-plane-outline" size={18} color={colors.accent} />
-                    <Text style={styles.listRowText}>
-                        {recommendSent ? "Sent ✓ — recommend to someone else" : "Recommend to a friend"}
-                    </Text>
-                </Touchable>
-            ) : (
+            {isRecommendOpen && (
                 <View style={styles.formCard}>
                     <TextInput
                         style={styles.input}
@@ -409,7 +456,8 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: "600",
     },
-    ratingCard: {
+    statsCard: {
+        flexDirection: "row",
         width: "100%",
         alignItems: "center",
         backgroundColor: colors.surface,
@@ -417,18 +465,38 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
         paddingVertical: spacing.md,
-        paddingHorizontal: spacing.md,
-        gap: spacing.xs,
         marginTop: spacing.sm,
     },
-    averageRatingRow: {
+    statColumn: {
+        flex: 1,
+        alignItems: "center",
+        gap: 2,
+    },
+    statDivider: {
+        width: StyleSheet.hairlineWidth,
+        alignSelf: "stretch",
+        backgroundColor: colors.border,
+    },
+    statValueRow: {
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
     },
-    averageRating: {
+    statNumber: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: "700",
+    },
+    statNumberMuted: {
+        color: colors.accent,
+        fontSize: 15,
+    },
+    statLabel: {
         color: colors.textMuted,
-        fontSize: 13,
+        fontSize: 11,
+    },
+    ratingPickerRow: {
+        marginTop: spacing.xs,
     },
     actionRow: {
         flexDirection: "row",
@@ -453,36 +521,39 @@ const styles = StyleSheet.create({
     actionButtonLikeActive: {
         backgroundColor: colors.likeMuted,
     },
-    actionLabelRow: {
-        flexDirection: "row",
-        justifyContent: "center",
-        gap: spacing.md,
+    confirmText: {
+        color: colors.accent,
+        fontSize: 12,
     },
-    actionLabel: {
-        width: 48,
-        color: colors.textMuted,
-        fontSize: 11,
-        textAlign: "center",
+    menuBackdrop: {
+        flex: 1,
+        backgroundColor: "#00000099",
+    },
+    menuSheet: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.surfaceRaised,
+        borderTopLeftRadius: radius.lg,
+        borderTopRightRadius: radius.lg,
+        paddingVertical: spacing.sm,
+        paddingBottom: spacing.lg,
+    },
+    menuRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+    },
+    menuRowText: {
+        color: colors.text,
+        fontSize: 15,
     },
     actionLink: {
         color: colors.accent,
         marginTop: spacing.xs,
-        fontWeight: "600",
-    },
-    listRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.sm,
-        width: "100%",
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        backgroundColor: colors.surface,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    listRowText: {
-        color: colors.text,
         fontWeight: "600",
     },
     formCard: {
