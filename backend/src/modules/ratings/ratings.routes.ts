@@ -58,6 +58,31 @@ router.get("/songs/:spotifyId", requireAuth, async (req, res) => {
     res.json({ score: result.rows[0]?.score ?? null, ...aggregate });
 });
 
+router.get("/albums/:spotifyId/tracks", requireAuth, async (req, res) => {
+    const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
+    if (!albumId) {
+        res.json([]);
+        return;
+    }
+
+    const result = await db.query<{ spotify_id: string; average: string; count: string }>(
+        `SELECT so.external_id AS spotify_id,
+            AVG(r.score)::numeric(10,2) AS average, COUNT(r.id) AS count
+        FROM songs so
+        JOIN ratings r ON r.entity_type = 'song' AND r.entity_id = so.id
+        WHERE so.album_id = $1
+        GROUP BY so.external_id`,
+        [albumId]
+    );
+    res.json(
+        result.rows.map((row) => ({
+            spotifyId: row.spotify_id,
+            averageScore: Number(row.average),
+            ratingCount: Number(row.count),
+        }))
+    );
+});
+
 router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
     const { score } = rateSchema.parse(req.body);
     const albumId = await getOrCreateAlbum(req.params.spotifyId as string);

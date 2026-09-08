@@ -40,6 +40,12 @@ interface RatingResponse {
     ratingCount: number;
 }
 
+interface TrackRating {
+    spotifyId: string;
+    averageScore: number;
+    ratingCount: number;
+}
+
 interface AlbumReview {
     id: number;
     body: string;
@@ -66,6 +72,7 @@ export default function AlbumDetailScreen() {
     const [averageScore, setAverageScore] = useState<number | null>(null);
     const [ratingCount, setRatingCount] = useState(0);
     const [reviews, setReviews] = useState<AlbumReview[]>([]);
+    const [trackRatings, setTrackRatings] = useState<Record<string, TrackRating>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [ratingError, setRatingError] = useState<string | null>(null);
@@ -96,16 +103,20 @@ export default function AlbumDetailScreen() {
     useEffect(() => {
         (async () => {
             try {
-                const [albumData, ratingData, reviewsData] = await Promise.all([
+                const [albumData, ratingData, reviewsData, trackRatingsData] = await Promise.all([
                     apiFetch<AlbumDetails>(`/catalog/albums/${id}`),
                     apiFetch<RatingResponse>(`/ratings/albums/${id}`),
                     apiFetch<AlbumReview[]>(`/reviews/albums/${id}`),
+                    apiFetch<TrackRating[]>(`/ratings/albums/${id}/tracks`),
                 ]);
                 setAlbum(albumData);
                 setMyRating(ratingData.score);
                 setAverageScore(ratingData.averageScore);
                 setRatingCount(ratingData.ratingCount);
                 setReviews(reviewsData);
+                setTrackRatings(
+                    Object.fromEntries(trackRatingsData.map((t) => [t.spotifyId, t]))
+                );
             } catch (err) {
                 setError(err instanceof ApiError ? err.message : "Something went wrong");
             } finally {
@@ -255,24 +266,30 @@ export default function AlbumDetailScreen() {
 
                     <View style={styles.ratingCard}>
                         <StarRating score={myRating} onRate={handleRate} />
-                        <Text style={styles.averageRating}>
-                            {ratingCount > 0
-                                ? `${averageScore !== null ? (averageScore / 2).toFixed(1) : "—"}/5 average · ${ratingCount} ${ratingCount === 1 ? "rating" : "ratings"}`
-                                : "No ratings yet — be the first"}
-                        </Text>
+                        {ratingCount > 0 ? (
+                            <View style={styles.averageRatingRow}>
+                                <Ionicons name="star" size={12} color={colors.rating} />
+                                <Text style={styles.averageRating}>
+                                    {averageScore !== null ? (averageScore / 2).toFixed(1) : "—"}/5 average ·{" "}
+                                    {ratingCount} {ratingCount === 1 ? "rating" : "ratings"}
+                                </Text>
+                            </View>
+                        ) : (
+                            <Text style={styles.averageRating}>No ratings yet — be the first</Text>
+                        )}
                     </View>
                     {ratingError && <Text style={styles.error}>{ratingError}</Text>}
 
                     <View style={styles.actionRow}>
                         <Touchable
-                            style={[styles.actionButton, like.isOn && styles.actionButtonActive]}
+                            style={[styles.actionButton, like.isOn && styles.actionButtonLikeActive]}
                             onPress={like.toggle}
                             disabled={like.isLoading}
                         >
                             <Ionicons
                                 name={like.isOn ? "heart" : "heart-outline"}
                                 size={22}
-                                color={like.isOn ? colors.accent : colors.textMuted}
+                                color={like.isOn ? colors.like : colors.textMuted}
                             />
                         </Touchable>
                         <Touchable
@@ -410,7 +427,7 @@ export default function AlbumDetailScreen() {
                                         </Touchable>
                                         {review.score !== null && (
                                             <View style={styles.reviewScorePill}>
-                                                <Ionicons name="star" size={11} color={colors.accent} />
+                                                <Ionicons name="star" size={11} color={colors.rating} />
                                                 <Text style={styles.reviewScore}>{review.score / 2}/5</Text>
                                             </View>
                                         )}
@@ -423,7 +440,7 @@ export default function AlbumDetailScreen() {
                                         <Ionicons
                                             name={review.liked_by_me ? "heart" : "heart-outline"}
                                             size={16}
-                                            color={review.liked_by_me ? colors.accent : colors.textMuted}
+                                            color={review.liked_by_me ? colors.like : colors.textMuted}
                                         />
                                         {review.like_count > 0 && (
                                             <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
@@ -461,6 +478,14 @@ export default function AlbumDetailScreen() {
                             </Text>
                         )}
                     </View>
+                    {trackRatings[item.id] && (
+                        <View style={styles.trackRatingPill}>
+                            <Ionicons name="star" size={10} color={colors.rating} />
+                            <Text style={styles.trackRatingText}>
+                                {(trackRatings[item.id]!.averageScore / 2).toFixed(1)}
+                            </Text>
+                        </View>
+                    )}
                     <Text style={styles.trackDuration}>{formatDuration(item.duration_ms)}</Text>
                 </Touchable>
             )}
@@ -519,6 +544,11 @@ const styles = StyleSheet.create({
         gap: spacing.xs,
         marginTop: spacing.sm,
     },
+    averageRatingRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
     averageRating: {
         color: colors.textMuted,
         fontSize: 13,
@@ -540,6 +570,9 @@ const styles = StyleSheet.create({
     },
     actionButtonActive: {
         backgroundColor: colors.accentMuted,
+    },
+    actionButtonLikeActive: {
+        backgroundColor: colors.likeMuted,
     },
     actionLabelRow: {
         flexDirection: "row",
@@ -640,6 +673,15 @@ const styles = StyleSheet.create({
     trackDuration: {
         color: colors.textMuted,
     },
+    trackRatingPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 3,
+    },
+    trackRatingText: {
+        color: colors.textMuted,
+        fontSize: 12,
+    },
     sectionTitle: {
         color: colors.text,
         fontSize: 16,
@@ -673,7 +715,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
-        backgroundColor: colors.accentMuted,
+        backgroundColor: colors.ratingMuted,
         borderRadius: radius.pill,
         paddingVertical: 2,
         paddingHorizontal: 8,

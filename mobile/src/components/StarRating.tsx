@@ -1,5 +1,6 @@
-import { View, Pressable, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { colors } from "../constants/theme";
+import { Touchable } from "./Touchable";
 
 interface StarRatingProps {
     score: number | null; // 1-10 (half-star units), or null if unrated
@@ -12,9 +13,9 @@ export function StarRating({ score, onRate }: StarRatingProps) {
     return (
         <View style={styles.row}>
             {[1, 2, 3, 4, 5].map((star) => (
-                <Pressable key={star} onPress={() => onRate(star * 2)}>
+                <Touchable key={star} onPress={() => onRate(star * 2)}>
                     <Text style={[styles.star, star <= filledStars && styles.starFilled]}>★</Text>
-                </Pressable>
+                </Touchable>
             ))}
         </View>
     );
@@ -30,6 +31,6 @@ const styles = StyleSheet.create({
         color: colors.border,
     },
     starFilled: {
-        color: colors.accent,
+        color: colors.rating,
     },
 });
