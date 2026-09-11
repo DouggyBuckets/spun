@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
 import { colors, spacing, radius } from "../constants/theme";
 import { Touchable } from "../components/Touchable";
+import { BackButton } from "../components/BackButton";
 
 const LIMIT = 20;
 
@@ -161,6 +162,9 @@ export default function ActivityScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <View style={styles.tabs}>
                 {(
                     [
@@ -278,6 +282,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
         padding: spacing.md,
+    },
+    topBar: {
+        marginBottom: spacing.sm,
     },
     tabs: {
         flexDirection: "row",

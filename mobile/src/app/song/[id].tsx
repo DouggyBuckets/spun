@@ -16,6 +16,7 @@ import { colors, spacing, radius, cardShadow, fonts } from "../../constants/them
 import { StarRating } from "../../components/StarRating";
 import { useToggle } from "../../hooks/useToggle";
 import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface RatingResponse {
     score: number | null;
@@ -199,6 +200,9 @@ export default function SongDetailScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             {imageUrl && <Image source={{ uri: imageUrl }} style={styles.cover} />}
             <Text style={styles.title}>{name}</Text>
             <Text style={styles.artist}>{artistNames}</Text>
@@ -433,6 +437,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         padding: spacing.lg,
         gap: spacing.sm,
+    },
+    topBar: {
+        width: "100%",
+        alignItems: "flex-start",
+        marginBottom: spacing.xs,
     },
     cover: {
         width: 220,

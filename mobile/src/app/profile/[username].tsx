@@ -15,6 +15,7 @@ import { useAuth } from "../../context/AuthContext";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius, cardShadow, fonts } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface Profile {
     id: number;
@@ -232,6 +233,9 @@ export default function ProfileScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <Touchable
                 onPress={isOwnProfile ? handlePickAvatar : undefined}
                 disabled={!isOwnProfile || isUploadingAvatar}
@@ -480,6 +484,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         padding: spacing.lg,
         gap: spacing.sm,
+    },
+    topBar: {
+        width: "100%",
+        alignItems: "flex-start",
+        marginBottom: spacing.xs,
     },
     avatar: {
         width: 88,

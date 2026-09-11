@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 export default function NewListScreen() {
     const { albumId } = useLocalSearchParams<{ albumId?: string }>();
@@ -42,6 +43,9 @@ export default function NewListScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <TextInput
                 style={styles.input}
                 placeholder="Title"
@@ -90,6 +94,7 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         gap: spacing.sm,
     },
+    topBar: {},
     input: {
         borderWidth: 1,
         borderColor: colors.border,

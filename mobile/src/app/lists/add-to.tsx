@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface ListSummary {
     id: number;
@@ -62,6 +63,9 @@ export default function AddToListScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <Touchable
                 style={styles.newListRow}
                 onPress={() => router.push({ pathname: "/lists/new", params: { albumId } })}
@@ -112,6 +116,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
         padding: spacing.md,
+    },
+    topBar: {
+        marginBottom: spacing.sm,
     },
     newListRow: {
         flexDirection: "row",

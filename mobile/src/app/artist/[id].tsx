@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius, fonts } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface ArtistAlbum {
     id: string;
@@ -61,6 +62,9 @@ export default function ArtistDetailScreen() {
             keyExtractor={(album) => album.id}
             ListHeaderComponent={
                 <View style={styles.header}>
+                    <View style={styles.topBar}>
+                        <BackButton />
+                    </View>
                     <View style={styles.artistIcon}>
                         <Ionicons name="mic-outline" size={28} color={colors.textMuted} />
                     </View>
@@ -108,6 +112,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: spacing.xs,
         marginBottom: spacing.md,
+    },
+    topBar: {
+        width: "100%",
+        alignItems: "flex-start",
+        marginBottom: spacing.xs,
     },
     artistIcon: {
         width: 72,

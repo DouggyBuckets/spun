@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
 import { colors, spacing, radius } from "../constants/theme";
 import { Touchable } from "../components/Touchable";
+import { BackButton } from "../components/BackButton";
 
 interface Recommendation {
     id: number;
@@ -76,6 +77,9 @@ export default function RecommendationsScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             {error && <Text style={styles.error}>{error}</Text>}
             <FlatList
                 data={items}
@@ -122,6 +126,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
         padding: spacing.md,
+    },
+    topBar: {
+        marginBottom: spacing.sm,
     },
     centered: {
         flex: 1,

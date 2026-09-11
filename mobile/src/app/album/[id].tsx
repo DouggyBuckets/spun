@@ -16,6 +16,7 @@ import { colors, spacing, radius, cardShadow, fonts } from "../../constants/them
 import { StarRating } from "../../components/StarRating";
 import { useToggle } from "../../hooks/useToggle";
 import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface Track {
     id: string;
@@ -257,6 +258,9 @@ export default function AlbumDetailScreen() {
             keyExtractor={(track) => track.id}
             ListHeaderComponent={
                 <View style={styles.header}>
+                    <View style={styles.topBar}>
+                        <BackButton />
+                    </View>
                     {album.images[0] && (
                         <Image source={{ uri: album.images[0].url }} style={styles.cover} />
                     )}
@@ -564,6 +568,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         padding: spacing.lg,
         gap: spacing.sm,
+    },
+    topBar: {
+        width: "100%",
+        alignItems: "flex-start",
+        marginBottom: spacing.xs,
     },
     cover: {
         width: 220,

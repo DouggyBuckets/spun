@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 type Tab = "followers" | "following";
 
@@ -50,6 +51,9 @@ export default function FollowsScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <View style={styles.tabs}>
                 {(["followers", "following"] as Tab[]).map((t) => (
                     <Touchable
@@ -110,6 +114,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
         padding: spacing.md,
+    },
+    topBar: {
+        marginBottom: spacing.sm,
     },
     tabs: {
         flexDirection: "row",

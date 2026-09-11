@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../api/client";
 import { colors, spacing, radius } from "../constants/theme";
 import { Touchable } from "./Touchable";
+import { BackButton } from "./BackButton";
 
 export interface AlbumPickResult {
     id: string;
@@ -70,6 +71,9 @@ export function AlbumSearchPicker({ onPick }: AlbumSearchPickerProps) {
 
     return (
         <View style={styles.container}>
+            <View style={styles.header}>
+                <BackButton />
+            </View>
             <View style={styles.inputRow}>
                 <Ionicons name="search" size={18} color={colors.textMuted} />
                 <TextInput
@@ -120,6 +124,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
         padding: spacing.md,
+    },
+    header: {
+        marginBottom: spacing.sm,
     },
     inputRow: {
         flexDirection: "row",
