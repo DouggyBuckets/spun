@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../../api/client";
-import { colors, spacing, radius, cardShadow } from "../../constants/theme";
+import { colors, spacing, radius, cardShadow, fonts } from "../../constants/theme";
 import { StarRating } from "../../components/StarRating";
 import { useToggle } from "../../hooks/useToggle";
 import { Touchable } from "../../components/Touchable";
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     title: {
         color: colors.text,
         fontSize: 24,
-        fontWeight: "800",
+        fontFamily: fonts.displayBold,
         textAlign: "center",
         letterSpacing: 0.2,
     },
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
     ratingModalTitle: {
         color: colors.text,
         fontSize: 17,
-        fontWeight: "700",
+        fontFamily: fonts.displaySemiBold,
     },
     menuBackdrop: {
         flex: 1,
@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         color: colors.text,
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: fonts.displaySemiBold,
         alignSelf: "flex-start",
         marginTop: spacing.xs,
     },

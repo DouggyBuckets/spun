@@ -45,3 +45,12 @@ export const cardShadow = {
     shadowRadius: 6,
     elevation: 4,
 };
+
+// A distinct display face for titles/headers only — body text stays on the
+// system font. Loaded once in the root layout via useFonts; falls back to
+// the system font automatically if a screen renders before fonts finish
+// loading, since RN just ignores an unknown fontFamily name.
+export const fonts = {
+    displayBold: "SpaceGrotesk_700Bold",
+    displaySemiBold: "SpaceGrotesk_600SemiBold",
+};

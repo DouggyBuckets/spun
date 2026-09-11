@@ -1,18 +1,11 @@
 import { useState } from "react";
-import {
-    View,
-    TextInput,
-    FlatList,
-    Image,
-    Text,
-    Pressable,
-    StyleSheet,
-    ActivityIndicator,
-} from "react-native";
+import { View, TextInput, FlatList, Image, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Redirect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
-import { colors } from "../constants/theme";
+import { colors, spacing, radius, fonts } from "../constants/theme";
+import { Touchable } from "../components/Touchable";
 
 type SearchType = "albums" | "tracks" | "artists" | "users";
 
@@ -111,6 +104,13 @@ async function searchByType(type: SearchType, query: string): Promise<Normalized
     }));
 }
 
+const TAB_ICONS: Record<SearchType, keyof typeof Ionicons.glyphMap> = {
+    albums: "disc-outline",
+    tracks: "musical-notes-outline",
+    artists: "mic-outline",
+    users: "people-outline",
+};
+
 export default function Index() {
     const { user, logout } = useAuth();
     const [query, setQuery] = useState("");
@@ -147,42 +147,53 @@ export default function Index() {
             <View style={styles.header}>
                 <Text style={styles.username}>{user.username}</Text>
                 <View style={styles.headerLinks}>
-                    <Pressable onPress={() => router.push("/feed")}>
-                        <Text style={styles.link}>Feed</Text>
-                    </Pressable>
-                    <Pressable onPress={() => router.push(`/profile/${user.username}`)}>
-                        <Text style={styles.link}>Profile</Text>
-                    </Pressable>
-                    <Pressable onPress={() => router.push("/recommendations")}>
-                        <Text style={styles.link}>Inbox</Text>
-                    </Pressable>
-                    <Pressable onPress={logout}>
-                        <Text style={styles.link}>Log out</Text>
-                    </Pressable>
+                    <Touchable style={styles.headerIcon} onPress={() => router.push("/feed")}>
+                        <Ionicons name="pulse-outline" size={20} color={colors.text} />
+                    </Touchable>
+                    <Touchable
+                        style={styles.headerIcon}
+                        onPress={() => router.push(`/profile/${user.username}`)}
+                    >
+                        <Ionicons name="person-outline" size={20} color={colors.text} />
+                    </Touchable>
+                    <Touchable style={styles.headerIcon} onPress={() => router.push("/recommendations")}>
+                        <Ionicons name="mail-outline" size={20} color={colors.text} />
+                    </Touchable>
+                    <Touchable style={styles.headerIcon} onPress={logout}>
+                        <Ionicons name="log-out-outline" size={20} color={colors.textMuted} />
+                    </Touchable>
                 </View>
             </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder={`Search ${searchType}...`}
-                placeholderTextColor={colors.textMuted}
-                value={query}
-                onChangeText={setQuery}
-                onSubmitEditing={handleSearch}
-                returnKeyType="search"
-            />
+            <View style={styles.inputRow}>
+                <Ionicons name="search" size={18} color={colors.textMuted} />
+                <TextInput
+                    style={styles.input}
+                    placeholder={`Search ${searchType}...`}
+                    placeholderTextColor={colors.textMuted}
+                    value={query}
+                    onChangeText={setQuery}
+                    onSubmitEditing={handleSearch}
+                    returnKeyType="search"
+                />
+            </View>
 
             <View style={styles.tabs}>
                 {(["albums", "tracks", "artists", "users"] as SearchType[]).map((type) => (
-                    <Pressable
+                    <Touchable
                         key={type}
                         style={[styles.tab, searchType === type && styles.tabActive]}
                         onPress={() => handleSelectType(type)}
                     >
+                        <Ionicons
+                            name={TAB_ICONS[type]}
+                            size={14}
+                            color={searchType === type ? colors.text : colors.textMuted}
+                        />
                         <Text style={[styles.tabText, searchType === type && styles.tabTextActive]}>
                             {type[0].toUpperCase() + type.slice(1)}
                         </Text>
-                    </Pressable>
+                    </Touchable>
                 ))}
             </View>
 
@@ -193,7 +204,7 @@ export default function Index() {
                 data={results}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <Pressable
+                    <Touchable
                         style={styles.resultRow}
                         onPress={() => {
                             if (item.type === "album") {
@@ -220,14 +231,26 @@ export default function Index() {
                             }
                         }}
                     >
-                        {item.imageUrl && (
-                            <Image source={{ uri: item.imageUrl }} style={styles.cover} />
+                        {item.imageUrl ? (
+                            <Image
+                                source={{ uri: item.imageUrl }}
+                                style={[styles.cover, item.type === "user" && styles.coverRound]}
+                            />
+                        ) : item.type === "user" ? (
+                            <View style={styles.avatarPlaceholder}>
+                                <Text style={styles.avatarInitial}>
+                                    {item.title[0]?.toUpperCase()}
+                                </Text>
+                            </View>
+                        ) : (
+                            <View style={styles.cover} />
                         )}
                         <View style={styles.resultText}>
                             <Text style={styles.resultTitle}>{item.title}</Text>
                             <Text style={styles.resultArtist}>{item.subtitle}</Text>
                         </View>
-                    </Pressable>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                    </Touchable>
                 )}
                 ListEmptyComponent={
                     !isSearching && query ? (
@@ -243,78 +266,122 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
+        padding: spacing.md,
     },
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: spacing.md,
     },
     headerLinks: {
         flexDirection: "row",
-        gap: 16,
+        gap: spacing.sm,
     },
     username: {
         color: colors.text,
-        fontWeight: "600",
-        fontSize: 16,
+        fontFamily: fonts.displaySemiBold,
+        fontSize: 18,
     },
-    link: {
-        color: colors.accent,
-    },
-    input: {
+    headerIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
-        padding: 12,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    inputRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: radius.md,
+        paddingHorizontal: spacing.sm,
         backgroundColor: colors.surface,
+        marginBottom: spacing.sm,
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 12,
         color: colors.text,
-        marginBottom: 12,
     },
     tabs: {
         flexDirection: "row",
-        gap: 8,
-        marginBottom: 12,
+        gap: spacing.sm,
+        marginBottom: spacing.sm,
     },
     tab: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
         paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 16,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.pill,
         backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     tabActive: {
         backgroundColor: colors.accent,
+        borderColor: colors.accent,
     },
     tabText: {
         color: colors.textMuted,
         fontWeight: "600",
+        fontSize: 13,
     },
     tabTextActive: {
         color: colors.text,
     },
     spinner: {
-        marginVertical: 12,
+        marginVertical: spacing.sm,
     },
     error: {
         color: colors.error,
-        marginBottom: 12,
+        marginBottom: spacing.sm,
     },
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     resultRow: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 8,
-        gap: 12,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.xs,
     },
     cover: {
-        width: 56,
-        height: 56,
-        borderRadius: 4,
+        width: 52,
+        height: 52,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceRaised,
+    },
+    coverRound: {
+        borderRadius: radius.pill,
+    },
+    avatarPlaceholder: {
+        width: 52,
+        height: 52,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceRaised,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    avatarInitial: {
+        color: colors.textMuted,
+        fontSize: 18,
+        fontWeight: "700",
     },
     resultText: {
         flex: 1,
@@ -325,5 +392,6 @@ const styles = StyleSheet.create({
     },
     resultArtist: {
         color: colors.textMuted,
+        fontSize: 13,
     },
 });
