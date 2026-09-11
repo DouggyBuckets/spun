@@ -24,6 +24,40 @@ async function getAggregateScore(entityType: "album" | "song", entityId: number)
     };
 }
 
+const popularAlbumsSchema = z.object({
+    limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+router.get("/popular-albums", requireAuth, async (req, res) => {
+    const { limit } = popularAlbumsSchema.parse(req.query);
+
+    const result = await db.query<{
+        spotify_id: string;
+        title: string;
+        cover_url: string | null;
+        average: string;
+        count: string;
+    }>(
+        `SELECT al.external_id AS spotify_id, al.title, al.cover_url,
+            AVG(r.score)::numeric(10,2) AS average, COUNT(r.id)::int AS count
+        FROM ratings r
+        JOIN albums al ON al.id = r.entity_id AND r.entity_type = 'album'
+        GROUP BY al.id
+        ORDER BY count DESC, average DESC
+        LIMIT $1`,
+        [limit]
+    );
+    res.json(
+        result.rows.map((row) => ({
+            spotifyId: row.spotify_id,
+            title: row.title,
+            coverUrl: row.cover_url,
+            averageScore: Number(row.average),
+            ratingCount: Number(row.count),
+        }))
+    );
+});
+
 router.get("/albums/:spotifyId", requireAuth, async (req, res) => {
     const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
     if (!albumId) {

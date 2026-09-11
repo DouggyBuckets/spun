@@ -42,6 +42,14 @@ interface PopularReview {
     liked_by_me: boolean;
 }
 
+interface PopularAlbum {
+    spotifyId: string;
+    title: string;
+    coverUrl: string | null;
+    averageScore: number;
+    ratingCount: number;
+}
+
 const ACTIVITY_ICONS: Record<FeedItem["activity_type"], keyof typeof Ionicons.glyphMap> = {
     rating: "star",
     review: "create-outline",
@@ -92,6 +100,7 @@ export default function HomeScreen() {
     const { user, logout } = useAuth();
     const [items, setItems] = useState<FeedItem[]>([]);
     const [popular, setPopular] = useState<PopularReview[]>([]);
+    const [popularAlbums, setPopularAlbums] = useState<PopularAlbum[]>([]);
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
@@ -105,15 +114,17 @@ export default function HomeScreen() {
                 setIsLoading(true);
                 setError(null);
                 try {
-                    const [feedData, popularData] = await Promise.all([
+                    const [feedData, popularData, popularAlbumsData] = await Promise.all([
                         apiFetch<FeedItem[]>(`/feed?limit=${LIMIT}&offset=0`),
                         apiFetch<PopularReview[]>(`/reviews/popular?limit=5`),
+                        apiFetch<PopularAlbum[]>(`/ratings/popular-albums?limit=10`),
                     ]);
                     if (cancelled) return;
                     setItems(feedData);
                     setOffset(feedData.length);
                     setHasMore(feedData.length === LIMIT);
                     setPopular(popularData);
+                    setPopularAlbums(popularAlbumsData);
                 } catch (err) {
                     if (!cancelled) {
                         setError(err instanceof ApiError ? err.message : "Something went wrong");
@@ -184,52 +195,97 @@ export default function HomeScreen() {
                 data={items}
                 keyExtractor={(item, index) => `${item.activity_type}-${item.reference_id}-${index}`}
                 ListHeaderComponent={
-                    popular.length > 0 ? (
-                        <View style={styles.popularSection}>
-                            <Text style={styles.sectionTitle}>Popular Reviews</Text>
-                            {popular.map((review) => (
-                                <Touchable
-                                    key={review.id}
-                                    style={styles.popularCard}
-                                    onPress={() => goToReviewEntity(review)}
-                                >
-                                    {review.cover_url ? (
-                                        <Image source={{ uri: review.cover_url }} style={styles.popularCover} />
-                                    ) : (
-                                        <View style={styles.popularCover} />
-                                    )}
-                                    <View style={styles.popularText}>
-                                        <View style={styles.popularTitleRow}>
-                                            <Text style={styles.popularEntity} numberOfLines={1}>
-                                                {review.entity_name ?? "Unknown"}
+                    <View>
+                        <Text style={styles.sectionTitle}>Popular Albums</Text>
+                        {popularAlbums.length > 0 ? (
+                            <FlatList
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                data={popularAlbums}
+                                keyExtractor={(album) => album.spotifyId}
+                                style={styles.popularAlbumsRow}
+                                contentContainerStyle={styles.popularAlbumsContent}
+                                renderItem={({ item }) => (
+                                    <Touchable
+                                        style={styles.albumCard}
+                                        onPress={() => router.push(`/album/${item.spotifyId}`)}
+                                    >
+                                        {item.coverUrl ? (
+                                            <Image source={{ uri: item.coverUrl }} style={styles.albumCover} />
+                                        ) : (
+                                            <View style={styles.albumCover} />
+                                        )}
+                                        <Text style={styles.albumTitle} numberOfLines={1}>
+                                            {item.title}
+                                        </Text>
+                                        <View style={styles.scorePill}>
+                                            <Ionicons name="star" size={10} color={colors.rating} />
+                                            <Text style={styles.scorePillText}>
+                                                {(item.averageScore / 2).toFixed(1)}
                                             </Text>
-                                            {review.score !== null && (
-                                                <View style={styles.scorePill}>
-                                                    <Ionicons name="star" size={10} color={colors.rating} />
-                                                    <Text style={styles.scorePillText}>
-                                                        {review.score / 2}/5
-                                                    </Text>
-                                                </View>
-                                            )}
                                         </View>
-                                        <Text style={styles.popularAuthor}>
-                                            by {review.display_name ?? review.username}
-                                        </Text>
-                                        <Text style={styles.popularBody} numberOfLines={2}>
-                                            {review.body}
-                                        </Text>
-                                        <View style={styles.popularLikeRow}>
-                                            <Ionicons name="heart" size={12} color={colors.like} />
-                                            <Text style={styles.popularLikeCount}>{review.like_count}</Text>
+                                    </Touchable>
+                                )}
+                            />
+                        ) : (
+                            <Text style={styles.emptySectionText}>
+                                No ratings yet — rate an album to get this started.
+                            </Text>
+                        )}
+
+                        <Text style={styles.sectionTitle}>Popular Reviews</Text>
+                        {popular.length > 0 ? (
+                            <View style={styles.popularSection}>
+                                {popular.map((review) => (
+                                    <Touchable
+                                        key={review.id}
+                                        style={styles.popularCard}
+                                        onPress={() => goToReviewEntity(review)}
+                                    >
+                                        {review.cover_url ? (
+                                            <Image
+                                                source={{ uri: review.cover_url }}
+                                                style={styles.popularCover}
+                                            />
+                                        ) : (
+                                            <View style={styles.popularCover} />
+                                        )}
+                                        <View style={styles.popularText}>
+                                            <View style={styles.popularTitleRow}>
+                                                <Text style={styles.popularEntity} numberOfLines={1}>
+                                                    {review.entity_name ?? "Unknown"}
+                                                </Text>
+                                                {review.score !== null && (
+                                                    <View style={styles.scorePill}>
+                                                        <Ionicons name="star" size={10} color={colors.rating} />
+                                                        <Text style={styles.scorePillText}>
+                                                            {review.score / 2}/5
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <Text style={styles.popularAuthor}>
+                                                by {review.display_name ?? review.username}
+                                            </Text>
+                                            <Text style={styles.popularBody} numberOfLines={2}>
+                                                {review.body}
+                                            </Text>
+                                            <View style={styles.popularLikeRow}>
+                                                <Ionicons name="heart" size={12} color={colors.like} />
+                                                <Text style={styles.popularLikeCount}>{review.like_count}</Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                </Touchable>
-                            ))}
-                            <Text style={[styles.sectionTitle, styles.followingTitle]}>Following</Text>
-                        </View>
-                    ) : (
+                                    </Touchable>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.emptySectionText}>
+                                No reviews yet — be the first to write one.
+                            </Text>
+                        )}
+
                         <Text style={[styles.sectionTitle, styles.followingTitle]}>Following</Text>
-                    )
+                    </View>
                 }
                 ListEmptyComponent={
                     <Text style={styles.emptyText}>
@@ -331,6 +387,32 @@ const styles = StyleSheet.create({
     },
     followingTitle: {
         marginTop: spacing.xs,
+    },
+    emptySectionText: {
+        color: colors.textMuted,
+        fontSize: 13,
+        marginBottom: spacing.md,
+    },
+    popularAlbumsRow: {
+        marginBottom: spacing.md,
+    },
+    popularAlbumsContent: {
+        gap: spacing.sm,
+    },
+    albumCard: {
+        width: 100,
+        gap: 4,
+    },
+    albumCover: {
+        width: 100,
+        height: 100,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceRaised,
+    },
+    albumTitle: {
+        color: colors.text,
+        fontSize: 12,
+        fontWeight: "600",
     },
     popularSection: {
         marginBottom: spacing.sm,
