@@ -6,13 +6,15 @@ export const colors = {
     surface: "#262626",
     surfaceRaised: "#333333",
     accent: "#8B5CF6",
-    accentMuted: "#8B5CF64D",
+    accentMuted: "#8B5CF629",
     // Semantic colors so ratings/likes/actions don't all reuse the same purple —
     // gold for ratings/stars and rose for likes are near-universal conventions.
-    rating: "#F5A623",
-    ratingMuted: "#F5A6234D",
-    like: "#EF476F",
-    likeMuted: "#EF476F4D",
+    // Kept deliberately restrained (not neon-bright) so they read as accents on
+    // black rather than colored patches — color lives in icon glyphs, not fills.
+    rating: "#E0A63C",
+    ratingMuted: "#E0A63C29",
+    like: "#D6516F",
+    likeMuted: "#D6516F29",
     text: "#FFFFFF",
     textMuted: "#A0A0A0",
     border: "#3D3D3D",

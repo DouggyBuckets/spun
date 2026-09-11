@@ -225,7 +225,9 @@ export default function SongDetailScreen() {
                 </View>
                 <View style={styles.statDivider} />
                 <Touchable style={styles.statColumn} onPress={() => setIsRatingModalOpen(true)}>
-                    <View style={[styles.statValueRow, styles.yourRatingPill]}>
+                    <View
+                        style={[styles.statValueRow, myRating !== null && styles.yourRatingPill]}
+                    >
                         {myRating !== null && <Ionicons name="star" size={13} color={colors.rating} />}
                         <Text style={[styles.statNumber, myRating === null && styles.statNumberMuted]}>
                             {myRating !== null ? (myRating / 2).toFixed(1) : "Rate"}
@@ -237,32 +239,25 @@ export default function SongDetailScreen() {
             {ratingError && <Text style={styles.error}>{ratingError}</Text>}
 
             <View style={styles.actionRow}>
-                <Touchable
-                    style={[styles.actionButton, styles.actionButtonLike]}
-                    onPress={like.toggle}
-                    disabled={like.isLoading}
-                >
+                <Touchable style={styles.actionButton} onPress={like.toggle} disabled={like.isLoading}>
                     <Ionicons
                         name={like.isOn ? "heart" : "heart-outline"}
                         size={22}
-                        color={like.isOn ? colors.like : colors.textMuted}
+                        color={colors.like}
                     />
                 </Touchable>
                 <Touchable
-                    style={[styles.actionButton, styles.actionButtonTinted]}
+                    style={styles.actionButton}
                     onPress={listenLater.toggle}
                     disabled={listenLater.isLoading}
                 >
                     <Ionicons
                         name={listenLater.isOn ? "bookmark" : "bookmark-outline"}
                         size={22}
-                        color={listenLater.isOn ? colors.accent : colors.textMuted}
+                        color={colors.accent}
                     />
                 </Touchable>
-                <Touchable
-                    style={[styles.actionButton, styles.actionButtonTinted]}
-                    onPress={() => setIsReviewOpen((v) => !v)}
-                >
+                <Touchable style={styles.actionButton} onPress={() => setIsReviewOpen((v) => !v)}>
                     <Ionicons name="create-outline" size={22} color={colors.accent} />
                 </Touchable>
                 <Touchable style={styles.actionButton} onPress={() => setIsMenuOpen(true)}>
@@ -495,8 +490,9 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
     statNumberMuted: {
-        color: colors.accent,
+        color: colors.textMuted,
         fontSize: 15,
+        fontWeight: "500",
     },
     statLabel: {
         color: colors.textMuted,
@@ -524,14 +520,6 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         justifyContent: "center",
         alignItems: "center",
-    },
-    actionButtonLike: {
-        backgroundColor: colors.likeMuted,
-        borderColor: colors.likeMuted,
-    },
-    actionButtonTinted: {
-        backgroundColor: colors.accentMuted,
-        borderColor: colors.accentMuted,
     },
     confirmText: {
         color: colors.accent,
