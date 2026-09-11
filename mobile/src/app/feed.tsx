@@ -1,16 +1,11 @@
 import { useCallback, useState } from "react";
-import {
-    View,
-    Text,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    ActivityIndicator,
-} from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { Redirect, useFocusEffect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
-import { colors } from "../constants/theme";
+import { colors, spacing, radius } from "../constants/theme";
+import { Touchable } from "../components/Touchable";
 
 const LIMIT = 20;
 
@@ -28,6 +23,20 @@ interface FeedItem {
     score: number | null;
     body: string | null;
     created_at: string;
+}
+
+const ACTIVITY_ICONS: Record<FeedItem["activity_type"], keyof typeof Ionicons.glyphMap> = {
+    rating: "star",
+    review: "create-outline",
+    like: "heart",
+    spin: "play-circle-outline",
+    follow: "person-add-outline",
+};
+
+function activityIconColor(type: FeedItem["activity_type"]): string {
+    if (type === "rating") return colors.rating;
+    if (type === "like") return colors.like;
+    return colors.accent;
 }
 
 function describeActivity(item: FeedItem): string {
@@ -132,29 +141,38 @@ export default function FeedScreen() {
                     </Text>
                 }
                 renderItem={({ item }) => (
-                    <Pressable style={styles.row} onPress={() => goToEntity(item)}>
-                        <Text style={styles.line}>
-                            <Text
-                                style={styles.actor}
-                                onPress={() => router.push(`/profile/${item.username}`)}
-                            >
-                                {item.display_name ?? item.username}
-                            </Text>{" "}
-                            {describeActivity(item)}
-                        </Text>
-                        {item.body && (
-                            <Text style={styles.body} numberOfLines={2}>
-                                {item.body}
+                    <Touchable style={styles.row} onPress={() => goToEntity(item)}>
+                        <View style={styles.iconWrap}>
+                            <Ionicons
+                                name={ACTIVITY_ICONS[item.activity_type]}
+                                size={16}
+                                color={activityIconColor(item.activity_type)}
+                            />
+                        </View>
+                        <View style={styles.rowText}>
+                            <Text style={styles.line}>
+                                <Text
+                                    style={styles.actor}
+                                    onPress={() => router.push(`/profile/${item.username}`)}
+                                >
+                                    {item.display_name ?? item.username}
+                                </Text>{" "}
+                                {describeActivity(item)}
                             </Text>
-                        )}
-                        <Text style={styles.date}>
-                            {new Date(item.created_at).toLocaleDateString()}
-                        </Text>
-                    </Pressable>
+                            {item.body && (
+                                <Text style={styles.body} numberOfLines={2}>
+                                    {item.body}
+                                </Text>
+                            )}
+                            <Text style={styles.date}>
+                                {new Date(item.created_at).toLocaleDateString()}
+                            </Text>
+                        </View>
+                    </Touchable>
                 )}
                 ListFooterComponent={
                     hasMore ? (
-                        <Pressable
+                        <Touchable
                             style={styles.loadMore}
                             onPress={handleLoadMore}
                             disabled={isLoadingMore}
@@ -164,7 +182,7 @@ export default function FeedScreen() {
                             ) : (
                                 <Text style={styles.loadMoreText}>Load more</Text>
                             )}
-                        </Pressable>
+                        </Touchable>
                     ) : null
                 }
             />
@@ -176,7 +194,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
+        padding: spacing.md,
     },
     centered: {
         flex: 1,
@@ -185,10 +203,29 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     row: {
-        paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
-        gap: 4,
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.xs,
+    },
+    iconWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceRaised,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 2,
+    },
+    rowText: {
+        flex: 1,
+        gap: 2,
     },
     line: {
         color: colors.text,
@@ -209,14 +246,14 @@ const styles = StyleSheet.create({
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     error: {
         color: colors.error,
-        marginBottom: 12,
+        marginBottom: spacing.md,
     },
     loadMore: {
-        paddingVertical: 16,
+        paddingVertical: spacing.md,
         alignItems: "center",
     },
     loadMoreText: {

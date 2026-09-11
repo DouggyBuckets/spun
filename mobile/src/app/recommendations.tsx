@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { Redirect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
-import { colors } from "../constants/theme";
+import { colors, spacing, radius } from "../constants/theme";
+import { Touchable } from "../components/Touchable";
 
 interface Recommendation {
     id: number;
@@ -80,7 +82,7 @@ export default function RecommendationsScreen() {
                 keyExtractor={(item) => String(item.id)}
                 ListEmptyComponent={<Text style={styles.emptyText}>No recommendations yet.</Text>}
                 renderItem={({ item }) => (
-                    <Pressable
+                    <Touchable
                         style={styles.row}
                         onPress={() => {
                             if (!item.is_read) handleMarkRead(item.id);
@@ -89,7 +91,10 @@ export default function RecommendationsScreen() {
                             }
                         }}
                     >
-                        {!item.is_read && <View style={styles.unreadDot} />}
+                        <View style={styles.iconWrap}>
+                            <Ionicons name="paper-plane-outline" size={16} color={colors.accent} />
+                            {!item.is_read && <View style={styles.unreadDot} />}
+                        </View>
                         <View style={styles.rowText}>
                             <Text style={styles.sender}>
                                 <Text
@@ -102,10 +107,10 @@ export default function RecommendationsScreen() {
                             </Text>
                             {item.note && <Text style={styles.note}>"{item.note}"</Text>}
                         </View>
-                        <Pressable onPress={() => handleDismiss(item.id)}>
-                            <Text style={styles.dismiss}>✕</Text>
-                        </Pressable>
-                    </Pressable>
+                        <Touchable onPress={() => handleDismiss(item.id)} hitSlop={8}>
+                            <Ionicons name="close" size={18} color={colors.textMuted} />
+                        </Touchable>
+                    </Touchable>
                 )}
             />
         </View>
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
+        padding: spacing.md,
     },
     centered: {
         flex: 1,
@@ -127,17 +132,34 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         alignItems: "flex-start",
-        gap: 10,
-        paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.xs,
+    },
+    iconWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceRaised,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
     },
     unreadDot: {
+        position: "absolute",
+        top: -1,
+        right: -1,
         width: 8,
         height: 8,
         borderRadius: 4,
         backgroundColor: colors.accent,
-        marginTop: 6,
+        borderWidth: 1,
+        borderColor: colors.surface,
     },
     rowText: {
         flex: 1,
@@ -154,17 +176,13 @@ const styles = StyleSheet.create({
         fontStyle: "italic",
         marginTop: 2,
     },
-    dismiss: {
-        color: colors.textMuted,
-        padding: 4,
-    },
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     error: {
         color: colors.error,
-        marginBottom: 12,
+        marginBottom: spacing.md,
     },
 });
